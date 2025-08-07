@@ -34,6 +34,24 @@ def init_db():
             status TEXT DEFAULT 'EN_ATTENTE',
             approved_by_id INTEGER,
             admin_comment TEXT,
+            google_calendar_event_id TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sickness_declarations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            description TEXT,
+            pdf_filename TEXT,
+            pdf_path TEXT,
+            email_sent BOOLEAN DEFAULT 0,
+            viewed_by_admin BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -42,17 +60,38 @@ def init_db():
     
     # Insérer des données de test avec mot de passe hashé
     test_password = hashlib.sha256("password123".encode()).hexdigest()
+    
+    # Admin
     cursor.execute('''
         INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
         VALUES ('admin@example.com', 'Admin', 'User', ?, 'ADMIN')
     ''', (test_password,))
     
-    # Ajouter un utilisateur de test
+    # Utilisateur test
     user_password = hashlib.sha256("password123".encode()).hexdigest()
     cursor.execute('''
         INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
         VALUES ('fautrel.pierre@gmail.com', 'Pierre', 'Fautrel', ?, 'USER')
     ''', (user_password,))
+    
+    # Ajouter quelques absences de test
+    cursor.execute('''
+        INSERT OR IGNORE INTO absence_requests 
+        (user_id, type, start_date, end_date, reason, status) 
+        VALUES 
+        (2, 'VACANCES', '2024-01-15', '2024-01-19', 'Vacances d''hiver', 'APPROUVE'),
+        (2, 'MALADIE', '2024-02-01', '2024-02-03', 'Grippe', 'EN_ATTENTE'),
+        (2, 'VACANCES', '2024-03-20', '2024-03-25', 'Vacances de printemps', 'REFUSE')
+    ''')
+    
+    # Ajouter quelques déclarations de maladie de test
+    cursor.execute('''
+        INSERT OR IGNORE INTO sickness_declarations 
+        (user_id, start_date, end_date, description) 
+        VALUES 
+        (2, '2024-02-01', '2024-02-03', 'Grippe avec certificat médical'),
+        (2, '2024-04-10', '2024-04-12', 'Angine')
+    ''')
     
     conn.commit()
     return conn

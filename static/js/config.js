@@ -1,6 +1,6 @@
 // Configuration centralisée de l'application
 const CONFIG = {
-    API_BASE_URL: 'http://localhost:8000',
+    API_BASE_URL: window.location.origin, // Utilise l'URL actuelle pour Vercel
     ALERT_TIMEOUT: 5000,
     DATE_FORMAT: 'fr-FR',
     DATE_INPUT_FORMAT: 'YYYY-MM-DD'

@@ -8,174 +8,406 @@ def get_mime_type(file_path):
 def get_static_content(file_path):
     """Retourne le contenu des fichiers statiques embarqués"""
     static_files = {
-        '/static/index.html': '''<!DOCTYPE html>
+        '/static/index.html': {
+            'content': '''<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soft Absences - Gestion des Absences</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .login-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        .logo {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
-            font-weight: 500;
-        }
-
-        input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 5px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        button {
-            width: 100%;
-            padding: 0.75rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-        }
-
-        .error {
-            color: #e74c3c;
-            margin-top: 1rem;
-            padding: 0.5rem;
-            background: #fdf2f2;
-            border-radius: 5px;
-            display: none;
-        }
-
-        .success {
-            color: #27ae60;
-            margin-top: 1rem;
-            padding: 0.5rem;
-            background: #f0f9f4;
-            border-radius: 5px;
-            display: none;
-        }
-    </style>
+    <title>Gestion des Absences</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Script de configuration en premier -->
+    <script src="js/config.js"></script>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">🏢 Soft Absences</div>
-        <h2>Connexion</h2>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Gestion des Absences</h1>
+        </div>
+        
+        <!-- Section d'authentification -->
+        <div id="auth-section" class="auth-section">
+            <h2>Connexion</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email :</label>
+                    <input type="email" id="email" value="hello.obvious@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe :</label>
+                    <input type="password" id="password" value="admin123" required>
+                </div>
+                <button type="submit" class="btn">Se connecter</button>
+            </form>
+        </div>
+        
+        <!-- Contenu principal -->
+        <div id="main-content" class="main-content">
+            <div class="user-info" id="user-info">
+                <!-- Info utilisateur -->
             </div>
-            <div class="form-group">
-                <label for="password">Mot de passe</label>
-                <input type="password" id="password" name="password" required>
+            <div style="clear: both;"></div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('dashboard')">Tableau de bord</button>
+                <button class="nav-tab" onclick="showTab('calendar')">Calendrier</button>
+                <button class="nav-tab user-only" onclick="showTab('procedure')">Mes Demandes</button>
+                <button class="nav-tab admin-only" onclick="showTab('admin-users')" style="display: none;">Utilisateurs</button>
+                <button class="nav-tab admin-only" onclick="showTab('admin-requests')" style="display: none;">📋 Demandes</button>
+                <button class="nav-tab admin-only" onclick="openGoogleCalendarAdmin()" style="display: none;">Google Calendar</button>
+                <button class="nav-tab" onclick="logout()">Déconnexion</button>
             </div>
-            <button type="submit">Se connecter</button>
-        </form>
-        <div id="error" class="error"></div>
-        <div id="success" class="success"></div>
-    </div>
+            
+            <!-- Tableau de bord -->
+            <div id="dashboard" class="tab-content active">
+                <h2>Tableau de bord</h2>
+                <div id="dashboard-content" class="loading">Chargement...</div>
+            </div>
+            
 
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error');
-            const successDiv = document.getElementById('success');
+            <!-- Calendrier -->
+            <div id="calendar" class="tab-content">
+                <!-- Calendrier pour admin (vue mensuelle) et utilisateurs (vue annuelle) -->
+                <div id="calendar-section" class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button id="prev-period" class="nav-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <h2 id="calendar-title">Calendrier</h2>
+                            <button id="next-period" class="nav-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="calendar-actions">
+                            <button id="today-btn" class="btn btn-secondary">Aujourd'hui</button>
+                            <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter absence</button>
+                            <div id="calendar-summary" class="calendar-summary" style="display: none;">
+                                <span id="summary-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vue mensuelle pour admin -->
+                    <div id="monthly-calendar" class="monthly-view" style="display: none;">
+                        <div class="calendar-grid">
+                            <div class="calendar-weekdays">
+                                <div class="weekday">Lun</div>
+                                <div class="weekday">Mar</div>
+                                <div class="weekday">Mer</div>
+                                <div class="weekday">Jeu</div>
+                                <div class="weekday">Ven</div>
+                                <div class="weekday">Sam</div>
+                                <div class="weekday">Dim</div>
+                            </div>
+                            <div id="calendar-days" class="calendar-days">
+                                <!-- Les jours seront générés par JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vue annuelle pour utilisateurs -->
+                    <div id="yearly-calendar" class="yearly-view" style="display: none;">
+                        <div class="year-grid">
+                            <!-- Les 12 mois seront générés par JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Modal pour afficher les détails d'un événement -->
+                    <div id="event-modal" class="modal" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="event-title">Détails de l'absence</h3>
+                                <button class="modal-close" onclick="closeEventModal()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="event-details">
+                                    <div class="detail-row">
+                                        <strong>Utilisateur:</strong>
+                                        <span id="event-user"></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <strong>Type:</strong>
+                                        <span id="event-type"></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <strong>Dates:</strong>
+                                        <span id="event-dates"></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <strong>Status:</strong>
+                                        <span id="event-status"></span>
+                                    </div>
+                                    <div class="detail-row" id="event-reason-row" style="display: none;">
+                                        <strong>Raison:</strong>
+                                        <span id="event-reason"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulaire admin pour créer une absence -->
+                    <div id="admin-absence-modal" class="modal" style="display: none;">
+                        <div class="modal-content" style="max-width: 600px;">
+                            <div class="modal-header">
+                                <h3 style="color: #e74c3c; margin: 0;">👨‍💼 Créer une absence (Admin)</h3>
+                                <button class="modal-close" onclick="hideAdminAbsenceForm()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="admin-absence-form-element">
+                                    <div class="form-group">
+                                        <label for="admin-absence-user">Utilisateur :</label>
+                                        <select id="admin-absence-user" required>
+                                            <option value="">Sélectionner un utilisateur...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-absence-type">Type d'absence :</label>
+                                        <select id="admin-absence-type" required>
+                                            <option value="vacances">Vacances</option>
+                                            <option value="maladie">Maladie</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-start-date">Date de début :</label>
+                                        <input type="date" id="admin-start-date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-end-date">Date de fin :</label>
+                                        <input type="date" id="admin-end-date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-reason">Raison (optionnel) :</label>
+                                        <textarea id="admin-reason" placeholder="Motif de l'absence..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-comment">Commentaire admin (optionnel) :</label>
+                                        <textarea id="admin-comment" placeholder="Commentaire pour l'utilisateur..."></textarea>
+                                    </div>
+                                    <div style="text-align: right; margin-top: 20px;">
+                                        <button type="button" class="btn" onclick="hideAdminAbsenceForm()">Annuler</button>
+                                        <button type="submit" class="btn btn-success">Créer l'absence</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            try {
-                const response = await fetch('/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+            <!-- Procédure -->
+            <div id="procedure" class="tab-content">
+                <h2>Mes Demandes d'Absence</h2>
                 
-                const data = await response.json();
+                <!-- Boutons d'action -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn" onclick="showNewRequestForm()">➕ Nouvelle demande de congé</button>
+                    <button class="btn btn-warning" onclick="showSicknessDeclarationForm()">🏥 Déclaration de maladie</button>
+                </div>
                 
-                if (data.success) {
-                    successDiv.textContent = 'Connexion réussie ! Redirection...';
-                    successDiv.style.display = 'block';
-                    errorDiv.style.display = 'none';
+                <!-- Formulaire de nouvelle demande intégré -->
+                <div id="new-request-form" style="display: none; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h3>Nouvelle demande d'absence</h3>
+                    <form id="absence-form">
+                        <div class="form-group">
+                            <label for="absence-type">Type d'absence :</label>
+                            <select id="absence-type" required>
+                                <option value="vacances">Vacances</option>
+                                <option value="maladie">Maladie</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="start-date">Date de début :</label>
+                            <input type="date" id="start-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end-date">Date de fin :</label>
+                            <input type="date" id="end-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reason">Raison (optionnel) :</label>
+                            <textarea id="reason" placeholder="Motif de la demande..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">Soumettre</button>
+                        <button type="button" class="btn" onclick="hideNewRequestForm()">Annuler</button>
+                    </form>
+                </div>
+                
+                <!-- Formulaire de déclaration de maladie -->
+                <div id="sickness-declaration-form" style="display: none; margin-bottom: 20px; background: #fff3cd; padding: 20px; border-radius: 8px; border: 2px solid #ffc107;">
+                    <h3 style="color: #856404;">🏥 Déclaration de maladie avec certificat médical</h3>
+                    <p style="color: #856404; margin-bottom: 15px;">
+                        <strong>Note:</strong> Cette déclaration sera automatiquement envoyée avec votre certificat médical à hello.obvious@gmail.com
+                    </p>
+                    <form id="sickness-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="sickness-start-date">Date de début :</label>
+                            <input type="date" id="sickness-start-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sickness-end-date">Date de fin :</label>
+                            <input type="date" id="sickness-end-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sickness-description">Description (optionnel) :</label>
+                            <textarea id="sickness-description" placeholder="Détails sur l'arrêt maladie..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="sickness-pdf">Certificat médical (PDF) :</label>
+                            <input type="file" id="sickness-pdf" accept=".pdf" required>
+                            <small style="color: #856404; display: block; margin-top: 5px;">Fichier PDF uniquement, maximum 10MB</small>
+                        </div>
+                        <button type="submit" class="btn btn-warning">📧 Envoyer la déclaration</button>
+                        <button type="button" class="btn" onclick="hideSicknessDeclarationForm()">Annuler</button>
+                    </form>
+                </div>
+                
+                <!-- Liste des demandes de l'utilisateur -->
+                <div id="user-requests-section" style="margin-bottom: 30px;">
+                    <h3>📋 Mes demandes en cours</h3>
+                    <div id="user-requests-list" class="loading">Chargement...</div>
+                </div>
+                
+                <!-- Section procédure séparée -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
+                    <h3>📖 Procédure et Informations</h3>
+                    <div style="max-width: 800px; line-height: 1.6;">
+                        <p>Pour assurer une bonne organisation au sein de l'équipe, veuillez suivre la procédure ci-dessous pour toute demande de congés :</p>
                     
-                    // Stocker les informations utilisateur
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    localStorage.setItem('token', data.token);
+                    <ol style="margin: 20px 0; padding-left: 30px;">
+                        <li><strong>Délai de demande :</strong> Formuler votre demande au moins 2 mois à l'avance (sauf urgence) par email hello.obvious@gmail.com</li>
+                        <li><strong>Validation :</strong> La demande doit être approuvée par un réponse écrite via la chaine de mail.</li>
+                        <li><strong>Confirmation :</strong> Une fois validée, l'absence sera notée dans le calendrier d'équipe</li>
+                    </ol>
                     
-                    // Rediriger vers le dashboard
-                    setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1000);
-                } else {
-                    errorDiv.textContent = data.error || 'Erreur de connexion';
-                    errorDiv.style.display = 'block';
-                    successDiv.style.display = 'none';
-                }
-            } catch (error) {
-                errorDiv.textContent = 'Erreur de connexion au serveur';
-                errorDiv.style.display = 'block';
-                successDiv.style.display = 'none';
-            }
-        });
-    </script>
+                    <h3>Types d'Absences</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>Congés Payés Annuels</strong></h4>
+                        <p>Chaque salarié dispose de 25 jours ouvrés de congés payés par an (du 1er juin au 31 mai).</p>
+                        <p>Le fractionnement des congés est possible sous certaines conditions.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>RTT (Réduction du Temps de Travail)</strong></h4>
+                        <p>Nombre de jours selon votre contrat et la convention collective applicable.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>Congés Exceptionnels</strong></h4>
+                        <ul style="margin-left: 20px;">
+                            <li>Mariage/PACS : 4 jours</li>
+                            <li>Naissance/Adoption : 3 jours</li>
+                            <li>Décès d'un proche : 1 à 3 jours selon le lien de parenté</li>
+                            <li>Déménagement : 1 jour</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>Arrêt Maladie</strong></h4>
+                        <p>En cas de maladie, informer votre responsable dès que possible.</p>
+                        <p>Envoyer votre arrêt de travail dans les 48 heures à l'employeur et à la CPAM.</p>
+                        <p><strong>Nouveau:</strong> Vous pouvez maintenant utiliser le formulaire de déclaration de maladie ci-dessus pour envoyer automatiquement votre certificat médical.</p>
+                    </div>
+                </div>
+            </div>
+            </div>
+            
+            <!-- Admin: Gestion des utilisateurs -->
+            <div id="admin-users" class="tab-content">
+                <h2>Gestion des utilisateurs</h2>
+                <button class="btn" onclick="showNewUserForm()">➕ Nouvel utilisateur</button>
+                
+                <!-- Formulaire utilisateur intégré -->
+                <div id="new-user-form" style="display: none; margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h3>Nouvel utilisateur</h3>
+                    <form id="user-form">
+                        <div class="form-group">
+                            <label for="user-email">Email :</label>
+                            <input type="email" id="user-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-first-name">Prénom :</label>
+                            <input type="text" id="user-first-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-last-name">Nom :</label>
+                            <input type="text" id="user-last-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-role">Rôle :</label>
+                            <select id="user-role" required>
+                                <option value="user">Utilisateur</option>
+                                <option value="admin">Administrateur</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-password">Mot de passe :</label>
+                            <input type="password" id="user-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Créer</button>
+                        <button type="button" class="btn" onclick="hideNewUserForm()">Annuler</button>
+                    </form>
+                </div>
+                
+                <div id="users-list" class="loading" style="margin-top: 20px;">Chargement...</div>
+                
+                <!-- Modal pour le résumé des absences d'un utilisateur -->
+                <div id="user-absence-modal" class="modal" style="display: none;">
+                    <div class="modal-content" style="max-width: 800px;">
+                        <div class="modal-header">
+                            <h3 id="user-absence-title">Résumé des absences</h3>
+                            <button class="modal-close" onclick="closeUserAbsenceModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="user-absence-summary" class="loading">Chargement...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin: Toutes les demandes -->
+            <div id="admin-requests" class="tab-content">
+                <h2>📋 Gestion des Demandes - Administrateur</h2>
+                
+                <!-- Sous-onglets pour les demandes -->
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab" onclick="showSubTab('sickness-declarations')">🏥 Déclarations de Maladie</button>
+                </div>
+                
+                <!-- Contenu des sous-onglets -->
+                <div id="vacation-requests" class="sub-tab-content active">
+                    <div id="all-requests-list" class="loading">Chargement...</div>
+                </div>
+                
+                <div id="sickness-declarations" class="sub-tab-content">
+                    <div id="admin-sickness-list" class="loading">Chargement...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts modulaires -->
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/sickness.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>''',
-        '/static/dashboard.html': '''<!DOCTYPE html>
+            'mime_type': 'text/html'
+        },
+        '/static/dashboard.html': {
+            'content': '''<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -191,15 +423,22 @@ def get_static_content(file_path):
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
+            min-height: 100vh;
         }
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .logo {
@@ -214,62 +453,59 @@ def get_static_content(file_path):
         }
 
         .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 5px;
             cursor: pointer;
-            text-decoration: none;
+            transition: background 0.3s;
         }
 
-        .container {
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .main-content {
             max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+            margin: 2rem auto;
+            padding: 0 2rem;
         }
 
         .dashboard-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            margin-top: 2rem;
+            margin-bottom: 2rem;
         }
 
         .card {
             background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
 
         .card h3 {
             color: #333;
             margin-bottom: 1rem;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 0.5rem;
+            font-size: 1.3rem;
         }
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 0.5rem 0.5rem 0.5rem 0;
+        .card-content {
+            color: #666;
+            line-height: 1.6;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            transition: transform 0.2s ease;
-        }
-
-        .stats {
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-top: 1rem;
         }
@@ -278,7 +514,7 @@ def get_static_content(file_path):
             text-align: center;
             padding: 1rem;
             background: #f8f9fa;
-            border-radius: 5px;
+            border-radius: 10px;
         }
 
         .stat-number {
@@ -291,143 +527,1045 @@ def get_static_content(file_path):
             color: #666;
             font-size: 0.9rem;
         }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .recent-absences {
+            margin-top: 2rem;
+        }
+
+        .absence-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .absence-item:last-child {
+            border-bottom: none;
+        }
+
+        .absence-info h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .absence-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .main-content {
+                padding: 0 1rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">🏢 Soft Absences</div>
-        <div class="user-info">
-            <span id="userName">Chargement...</span>
-            <a href="#" class="logout-btn" onclick="logout()">Déconnexion</a>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🏢 Soft Absences</div>
+            <div class="user-info">
+                <span id="userName">Chargement...</span>
+                <button class="logout-btn" onclick="logout()">Déconnexion</button>
+            </div>
         </div>
-    </div>
+    </header>
 
-    <div class="container">
-        <h1>Tableau de bord</h1>
-        
+    <main class="main-content">
         <div class="dashboard-grid">
             <div class="card">
                 <h3>📊 Statistiques</h3>
-                <div class="stats">
+                <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-number" id="totalRequests">-</div>
-                        <div class="stat-label">Demandes totales</div>
+                        <div class="stat-number" id="totalAbsences">-</div>
+                        <div class="stat-label">Total Absences</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number" id="pendingRequests">-</div>
-                        <div class="stat-label">En attente</div>
+                        <div class="stat-number" id="pendingAbsences">-</div>
+                        <div class="stat-label">En Attente</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-number" id="approvedRequests">-</div>
+                        <div class="stat-number" id="approvedAbsences">-</div>
                         <div class="stat-label">Approuvées</div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3>🚀 Actions rapides</h3>
-                <a href="#" class="btn" onclick="showNewRequestForm()">➕ Nouvelle demande</a>
-                <a href="#" class="btn" onclick="showCalendar()">📅 Calendrier</a>
-                <a href="#" class="btn" onclick="showMyRequests()">📋 Mes demandes</a>
+                <h3>🚀 Actions Rapides</h3>
+                <div class="card-content">
+                    <p>Gérez vos absences et demandes rapidement</p>
+                    <div class="action-buttons">
+                        <a href="#" class="btn btn-primary" onclick="showNewAbsenceForm()">Nouvelle Demande</a>
+                        <a href="#" class="btn btn-secondary" onclick="showCalendar()">Voir Calendrier</a>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
-                <h3>📅 Prochaines absences</h3>
-                <div id="upcomingAbsences">
-                    <p>Aucune absence programmée</p>
+                <h3>📅 Prochaines Absences</h3>
+                <div class="card-content">
+                    <div id="upcomingAbsences">
+                        <p>Chargement des absences...</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="card recent-absences">
+            <h3>📋 Absences Récentes</h3>
+            <div id="recentAbsencesList">
+                <p>Chargement...</p>
+            </div>
+        </div>
+    </main>
 
     <script>
         // Vérifier l'authentification
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
         const token = localStorage.getItem('token');
-
-        if (!user.id || !token) {
-            window.location.href = '/';
+        if (!token) {
+            window.location.href = '/static/index.html';
         }
 
-        document.getElementById('userName').textContent = `${user.first_name} ${user.last_name}`;
+        // Charger les informations utilisateur
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        document.getElementById('userName').textContent = user.first_name ? `${user.first_name} ${user.last_name}` : 'Utilisateur';
 
         // Charger les données du dashboard
-        loadDashboardData();
-
         async function loadDashboardData() {
             try {
-                // Charger les statistiques
-                const statsResponse = await fetch('/dashboard/stats', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (statsResponse.ok) {
-                    const stats = await statsResponse.json();
-                    document.getElementById('totalRequests').textContent = stats.total || 0;
-                    document.getElementById('pendingRequests').textContent = stats.pending || 0;
-                    document.getElementById('approvedRequests').textContent = stats.approved || 0;
+                const [absencesResponse, usersResponse] = await Promise.all([
+                    fetch('/absences', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }),
+                    fetch('/users', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                ]);
+
+                if (absencesResponse.ok) {
+                    const absencesData = await absencesResponse.json();
+                    updateAbsencesStats(absencesData.absences || []);
+                    updateRecentAbsences(absencesData.absences || []);
                 }
 
-                // Charger les prochaines absences
-                const absencesResponse = await fetch('/calendar/upcoming', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (absencesResponse.ok) {
-                    const absences = await absencesResponse.json();
-                    displayUpcomingAbsences(absences);
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    // Mettre à jour les statistiques utilisateurs si nécessaire
                 }
             } catch (error) {
                 console.error('Erreur lors du chargement des données:', error);
             }
         }
 
-        function displayUpcomingAbsences(absences) {
-            const container = document.getElementById('upcomingAbsences');
-            
-            if (!absences || absences.length === 0) {
-                container.innerHTML = '<p>Aucune absence programmée</p>';
+        function updateAbsencesStats(absences) {
+            const total = absences.length;
+            const pending = absences.filter(a => a.status === 'EN_ATTENTE').length;
+            const approved = absences.filter(a => a.status === 'APPROUVEE').length;
+
+            document.getElementById('totalAbsences').textContent = total;
+            document.getElementById('pendingAbsences').textContent = pending;
+            document.getElementById('approvedAbsences').textContent = approved;
+        }
+
+        function updateRecentAbsences(absences) {
+            const recentList = document.getElementById('recentAbsencesList');
+            const upcomingList = document.getElementById('upcomingAbsences');
+
+            if (absences.length === 0) {
+                recentList.innerHTML = '<p>Aucune absence récente</p>';
+                upcomingList.innerHTML = '<p>Aucune absence à venir</p>';
                 return;
             }
 
-            const html = absences.slice(0, 5).map(absence => `
-                <div style="padding: 0.5rem 0; border-bottom: 1px solid #eee;">
-                    <strong>${absence.type}</strong> - ${absence.start_date} à ${absence.end_date}
-                    <br><small>${absence.user_name}</small>
+            // Trier par date de création (plus récentes en premier)
+            const sortedAbsences = absences.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const recentAbsences = sortedAbsences.slice(0, 5);
+
+            // Filtrer les absences à venir (dates futures)
+            const upcomingAbsences = absences.filter(a => new Date(a.start_date) > new Date()).slice(0, 3);
+
+            // Afficher les absences récentes
+            recentList.innerHTML = recentAbsences.map(absence => `
+                <div class="absence-item">
+                    <div class="absence-info">
+                        <h4>${absence.type}</h4>
+                        <p>${absence.user_name} - ${new Date(absence.start_date).toLocaleDateString()} au ${new Date(absence.end_date).toLocaleDateString()}</p>
+                    </div>
+                    <span class="status-badge status-${absence.status.toLowerCase()}">${absence.status}</span>
                 </div>
             `).join('');
-            
-            container.innerHTML = html;
+
+            // Afficher les absences à venir
+            upcomingList.innerHTML = upcomingAbsences.map(absence => `
+                <div class="absence-item">
+                    <div class="absence-info">
+                        <h4>${absence.type}</h4>
+                        <p>${absence.user_name} - ${new Date(absence.start_date).toLocaleDateString()} au ${new Date(absence.end_date).toLocaleDateString()}</p>
+                    </div>
+                    <span class="status-badge status-${absence.status.toLowerCase()}">${absence.status}</span>
+                </div>
+            `).join('');
         }
 
-        function logout() {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            window.location.href = '/';
-        }
-
-        function showNewRequestForm() {
-            // Implémenter l'affichage du formulaire de nouvelle demande
-            alert('Fonctionnalité à implémenter');
+        function showNewAbsenceForm() {
+            alert('Fonctionnalité à implémenter : Formulaire de nouvelle demande d\'absence');
         }
 
         function showCalendar() {
-            // Implémenter l'affichage du calendrier
-            alert('Fonctionnalité à implémenter');
+            alert('Fonctionnalité à implémenter : Vue calendrier');
         }
 
-        function showMyRequests() {
-            // Implémenter l'affichage des demandes de l'utilisateur
-            alert('Fonctionnalité à implémenter');
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/static/index.html';
         }
+
+        // Charger les données au chargement de la page
+        loadDashboardData();
     </script>
 </body>
-</html>''',
-        '/static/style.css': '''/* Styles globaux */
+</html> ''',
+            'mime_type': 'text/html'
+        },
+        '/static/css/styles.css': {
+            'content': '''/* Reset et styles de base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.header h1 {
+    text-align: center;
+}
+
+/* Sections principales */
+.auth-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.main-content {
+    display: none;
+}
+
+/* Navigation par onglets */
+.nav-tabs {
+    display: flex;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-tab {
+    flex: 1;
+    padding: 15px;
+    background: #ecf0f1;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.nav-tab.active {
+    background: #3498db;
+    color: white;
+}
+
+.nav-tab:hover {
+    background: #34495e;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Styles pour les sous-onglets */
+.sub-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.sub-tab {
+    padding: 12px 20px;
+    background: #f8f9fa;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+    border-bottom: 3px solid transparent;
+}
+
+.sub-tab:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.sub-tab.active {
+    background-color: #fff;
+    color: #1a73e8;
+    border-bottom-color: #1a73e8;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sub-tab-content {
+    display: none;
+    padding: 20px 0;
+}
+
+.sub-tab-content.active {
+    display: block;
+}
+
+/* Formulaires */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+/* Boutons */
+.btn {
+    background: #3498db;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-right: 10px;
+}
+
+.btn:hover {
+    background: #2980b9;
+}
+
+.btn-success {
+    background: #27ae60;
+}
+
+.btn-success:hover {
+    background: #229954;
+}
+
+.btn-danger {
+    background: #e74c3c;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+}
+
+.btn-warning {
+    background: #f39c12;
+}
+
+.btn-warning:hover {
+    background: #d68910;
+}
+
+/* Tableaux */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+/* Badges de statut */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-en_attente {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-approuve {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-refuse {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Informations utilisateur */
+.user-info {
+    float: right;
+    background: #34495e;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+/* Calendrier */
+.calendar {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Alertes */
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+/* États de chargement */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+/* ========== STYLES CALENDRIER ========== */
+
+.calendar-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #dadce0;
+    background-color: #fff;
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.nav-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    color: #5f6368;
+    transition: background-color 0.2s;
+}
+
+.nav-btn:hover {
+    background-color: #f1f3f4;
+}
+
+.calendar-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.calendar-summary {
+    font-size: 14px;
+    color: #5f6368;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+/* Vue mensuelle */
+.monthly-view {
+    padding: 16px;
+}
+
+.calendar-grid {
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f8f9fa;
+}
+
+.weekday {
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 500;
+    font-size: 14px;
+    color: #5f6368;
+    border-right: 1px solid #dadce0;
+}
+
+.weekday:last-child {
+    border-right: none;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-day {
+    min-height: 120px;
+    border-right: 1px solid #dadce0;
+    border-bottom: 1px solid #dadce0;
+    padding: 8px;
+    background: white;
+    position: relative;
+}
+
+.calendar-day:nth-child(7n) {
+    border-right: none;
+}
+
+.calendar-day.empty {
+    background-color: #f8f9fa;
+}
+
+.calendar-day.today {
+    background-color: #e3f2fd;
+}
+
+.day-number {
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #202124;
+}
+
+.calendar-day.today .day-number {
+    background: #1a73e8;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.day-events {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.event {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    border-left: 3px solid;
+}
+
+.event:hover {
+    opacity: 0.8;
+}
+
+/* Couleurs selon le type d'absence */
+.event-sickness-declaration {
+    background-color: #ffeaa7 !important;
+    border-left-color: #fdcb6e !important;
+    font-weight: bold;
+}
+
+.event-sickness-declaration:hover {
+    background-color: #fdcb6e !important;
+}
+
+.has-sickness-declaration {
+    background-color: #ffeaa7 !important;
+    font-weight: bold;
+}
+.event-vacances {
+    background-color: #e8f0fe;
+    border-left-color: #4285f4;
+    color: #1967d2;
+}
+
+/* Variations de couleurs pour les vacances selon le statut */
+.event-vacances.event-approuve {
+    background-color: #d4edda;
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+.event-vacances.event-en_attente {
+    background-color: #fff3cd;
+    border-left-color: #ffc107;
+    color: #856404;
+}
+
+.event-vacances.event-refuse {
+    background-color: #f8d7da;
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.event-maladie {
+    background-color: #fce8e6;
+    border-left-color: #ea4335;
+    color: #d93025;
+}
+
+/* Variations de couleurs pour les maladies selon le statut */
+.event-maladie.event-approuve {
+    background-color: #ffebee;
+    border-left-color: #f44336;
+    color: #c62828;
+}
+
+.event-maladie.event-en_attente {
+    background-color: #fff8e1;
+    border-left-color: #ff9800;
+    color: #e65100;
+}
+
+.event-maladie.event-refuse {
+    background-color: #fafafa;
+    border-left-color: #9e9e9e;
+    color: #424242;
+}
+
+/* Couleurs selon le statut */
+.event-en_attente {
+    opacity: 0.7;
+}
+
+.event-refuse {
+    background-color: #fef7e0;
+    border-left-color: #f9ab00;
+    color: #e37400;
+    text-decoration: line-through;
+}
+
+/* Vue annuelle */
+.yearly-view {
+    padding: 24px;
+}
+
+.year-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.mini-month {
+    background: white;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.mini-month-header {
+    background: #f8f9fa;
+    padding: 12px 16px;
+    font-weight: 500;
+    color: #202124;
+    border-bottom: 1px solid #dadce0;
+}
+
+.mini-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 8px;
+}
+
+.mini-weekday {
+    padding: 4px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: #5f6368;
+}
+
+.mini-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.mini-day:hover {
+    background-color: #f1f3f4;
+}
+
+.mini-day.empty {
+    color: #dadce0;
+    cursor: default;
+}
+
+.mini-day.today {
+    background: #1a73e8;
+    color: white;
+}
+
+.mini-day.has-events {
+    font-weight: bold;
+}
+
+/* Variations de couleur de fond pour les mini calendriers */
+.mini-day.event-vacances.event-approuve {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+}
+
+.mini-day.event-vacances.event-en_attente {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+}
+
+.mini-day.event-vacances.event-refuse {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.mini-day.event-maladie.event-approuve {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
+}
+
+.mini-day.event-maladie.event-en_attente {
+    background-color: #fff8e1 !important;
+    color: #e65100 !important;
+}
+
+.mini-day.event-maladie.event-refuse {
+    background-color: #fafafa !important;
+    color: #424242 !important;
+}
+
+.mini-day.has-sickness-declaration {
+    background-color: #ffeaa7 !important;
+    color: #856404 !important;
+    font-weight: bold;
+}
+
+.mini-day.has-events::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+}
+
+.mini-day.event-vacances.event-approuve::after {
+    background-color: #28a745; /* Vert pour vacances approuvées */
+}
+
+.mini-day.event-vacances.event-en_attente::after {
+    background-color: #ffc107; /* Jaune pour vacances en attente */
+}
+
+.mini-day.event-vacances.event-refuse::after {
+    background-color: #dc3545; /* Rouge pour vacances refusées */
+}
+
+.mini-day.event-maladie.event-approuve::after {
+    background-color: #f44336; /* Rouge pour maladie approuvée */
+}
+
+.mini-day.event-maladie.event-en_attente::after {
+    background-color: #ff9800; /* Orange pour maladie en attente */
+}
+
+.mini-day.event-maladie.event-refuse::after {
+    background-color: #9e9e9e; /* Gris pour maladie refusée */
+}
+
+/* Styles génériques (fallback) */
+.mini-day.event-en_attente::after {
+    background-color: #f9ab00;
+}
+
+.mini-day.event-refuse::after {
+    background-color: #9aa0a6;
+}
+
+/* Modal des événements */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #dadce0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #5f6368;
+    padding: 4px;
+}
+
+.modal-close:hover {
+    background-color: #f1f3f4;
+    border-radius: 50%;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    gap: 12px;
+}
+
+.detail-row strong {
+    min-width: 80px;
+    color: #5f6368;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .calendar-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+    
+    .calendar-actions {
+        justify-content: center;
+    }
+    
+    .year-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendar-day {
+        min-height: 80px;
+    }
+    
+    .event {
+        font-size: 10px;
+    }
+}''',
+            'mime_type': 'text/css'
+        },
+        '/static/style.css': {
+            'content': '''/* Variables CSS */
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --success-color: #4CAF50;
+    --warning-color: #ff9800;
+    --danger-color: #f44336;
+    --light-gray: #f5f7fa;
+    --dark-gray: #333;
+    --border-radius: 15px;
+    --box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+}
+
+/* Reset et base */
 * {
     margin: 0;
     padding: 0;
@@ -436,27 +1574,37 @@ def get_static_content(file_path):
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f7fa;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    min-height: 100vh;
     line-height: 1.6;
 }
 
+/* Conteneurs */
 .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    margin: 2rem auto;
+    text-align: center;
 }
 
-/* Header */
+/* En-têtes */
 .header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: white;
-    padding: 1rem 0;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .logo {
@@ -464,194 +1612,1845 @@ body {
     font-weight: bold;
 }
 
-/* Navigation */
-.nav {
-    display: flex;
-    gap: 1rem;
-}
-
-.nav-link {
-    color: white;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-
-.nav-link:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* Cards */
+/* Cartes */
 .card {
     background: white;
-    padding: 1.5rem;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
     margin-bottom: 1rem;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
 
 .card h3 {
-    color: #333;
+    color: var(--dark-gray);
     margin-bottom: 1rem;
-    border-bottom: 2px solid #667eea;
-    padding-bottom: 0.5rem;
+    font-size: 1.3rem;
 }
 
-/* Buttons */
+/* Boutons */
 .btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 0.75rem 1.5rem;
+    padding: 0.8rem 1.5rem;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
     text-decoration: none;
     display: inline-block;
-    margin: 0.5rem 0.5rem 0.5rem 0;
-    transition: transform 0.2s ease;
+    text-align: center;
+    transition: var(--transition);
+    font-weight: 500;
+    font-size: 1rem;
 }
 
-.btn:hover {
-    transform: translateY(-2px);
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
 }
 
 .btn-secondary {
     background: #6c757d;
+    color: white;
 }
 
-.btn-success {
-    background: #28a745;
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
-.btn-danger {
-    background: #dc3545;
-}
-
-.btn-warning {
-    background: #ffc107;
-    color: #212529;
-}
-
-/* Forms */
+/* Formulaires */
 .form-group {
+    text-align: left;
     margin-bottom: 1rem;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #333;
+    color: var(--dark-gray);
     font-weight: 500;
 }
 
-.form-group input,
-.form-group select,
-.form-group textarea {
+.form-group input {
     width: 100%;
-    padding: 0.75rem;
-    border: 2px solid #e1e5e9;
-    border-radius: 5px;
+    padding: 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: border-color 0.3s;
 }
 
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
+.form-group input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--primary-color);
 }
 
-/* Tables */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1rem 0;
-}
-
-.table th,
-.table td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.table th {
-    background: #f8f9fa;
-    font-weight: 600;
-}
-
-.table tr:hover {
-    background: #f8f9fa;
-}
-
-/* Alerts */
-.alert {
-    padding: 1rem;
-    border-radius: 5px;
-    margin-bottom: 1rem;
-}
-
-.alert-success {
-    background: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-}
-
-.alert-danger {
+/* Messages */
+.error-message {
+    color: var(--danger-color);
     background: #f8d7da;
-    color: #721c24;
     border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+    display: none;
 }
 
-.alert-warning {
+.success-message {
+    color: var(--success-color);
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+/* Statuts */
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-pending {
     background: #fff3cd;
     color: #856404;
-    border: 1px solid #ffeaa7;
 }
 
-/* Utilities */
-.text-center {
-    text-align: center;
+.status-approved {
+    background: #d4edda;
+    color: #155724;
 }
 
-.text-right {
-    text-align: right;
+.status-rejected {
+    background: #f8d7da;
+    color: #721c24;
 }
 
-.mt-2 {
-    margin-top: 0.5rem;
+/* Grilles */
+.grid {
+    display: grid;
+    gap: 1rem;
 }
 
-.mt-3 {
-    margin-top: 1rem;
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-.mb-2 {
-    margin-bottom: 0.5rem;
-}
-
-.mb-3 {
-    margin-bottom: 1rem;
+.grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 }
 
 /* Responsive */
 @media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+        margin: 1rem;
+    }
+    
     .header-content {
         flex-direction: column;
         gap: 1rem;
     }
     
-    .nav {
-        flex-wrap: wrap;
-        justify-content: center;
+    .grid-2,
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+} ''',
+            'mime_type': 'text/css'
+        },
+        '/static/js/config.js': {
+            'content': '''// Configuration centralisée de l'application
+const CONFIG = {
+    API_BASE_URL: window.location.origin, // Utilise l'URL actuelle pour Vercel
+    ALERT_TIMEOUT: 5000,
+    DATE_FORMAT: 'fr-FR',
+    DATE_INPUT_FORMAT: 'YYYY-MM-DD'
+};
+
+// Variables globales
+let currentUser = null;
+let authToken = null;
+
+// Export pour utilisation dans d'autres fichiers
+window.CONFIG = CONFIG;
+window.currentUser = currentUser;
+window.authToken = authToken;
+
+// Variables globales pour compatibilité
+window.API_BASE_URL = CONFIG.API_BASE_URL; ''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/auth.js': {
+            'content': '''// Authentification
+async function login(email, password) {
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/token`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error('Email ou mot de passe incorrect');
+        }
+        
+        const data = await response.json();
+        authToken = data.access_token;
+        
+        // Récupérer les infos utilisateur
+        currentUser = await apiCall('/users/me');
+        
+        showMainContent();
+        showAlert('Connexion réussie !');
+        
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+function logout() {
+    authToken = null;
+    currentUser = null;
+    // Nettoyer le localStorage au cas où
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Cacher tous les onglets admin
+    const adminTabs = document.querySelectorAll('.admin-only');
+    adminTabs.forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    document.getElementById('auth-section').style.display = 'block';
+    document.getElementById('main-content').style.display = 'none';
+    showAlert('Déconnexion réussie');
+    
+    // Forcer le rechargement de la page pour éviter les problèmes de cache
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function showMainContent() {
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    
+    // Afficher les infos utilisateur
+    const userInfo = document.getElementById('user-info');
+    userInfo.innerHTML = `
+        <strong>${currentUser.first_name} ${currentUser.last_name}</strong><br>
+        <small>${currentUser.email} - ${currentUser.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</small>
+    `;
+    
+    // Forcer l'actualisation de l'interface selon le rôle
+    updateUIBasedOnRole();
+    
+    // Charger le tableau de bord
+    loadDashboard();
+}
+
+function updateUIBasedOnRole() {
+    console.log('Mise à jour UI pour le rôle:', currentUser.role);
+    
+    // Gérer les onglets admin (afficher pour les admins seulement)
+    const adminTabs = document.querySelectorAll('.admin-only');
+    adminTabs.forEach(tab => {
+        tab.style.display = currentUser.role === 'admin' ? 'block' : 'none';
+    });
+    
+    // Gérer les onglets utilisateur (cacher pour les admins)
+    const userTabs = document.querySelectorAll('.user-only');
+    userTabs.forEach(tab => {
+        tab.style.display = currentUser.role === 'admin' ? 'none' : 'block';
+    });
+    
+    // S'assurer que l'onglet actif est le tableau de bord
+    const allTabs = document.querySelectorAll('.nav-tab');
+    allTabs.forEach(tab => tab.classList.remove('active'));
+    
+    const dashboardTab = document.querySelector('.nav-tab[onclick="showTab(\'dashboard\')"]');
+    if (dashboardTab) {
+        dashboardTab.classList.add('active');
     }
     
-    .container {
-        padding: 0 0.5rem;
+    // Afficher le bon contenu
+    const allContents = document.querySelectorAll('.tab-content');
+    allContents.forEach(content => content.classList.remove('active'));
+    
+    const dashboardContent = document.getElementById('dashboard');
+    if (dashboardContent) {
+        dashboardContent.classList.add('active');
     }
-}'''
+}''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/dashboard.js': {
+            'content': '''// Tableau de bord
+async function loadDashboard() {
+    const dashboardContent = document.getElementById('dashboard-content');
+    
+    // Interface différente selon le rôle
+    if (currentUser.role === 'admin') {
+        // Dashboard pour administrateurs
+        let html = '<h3>👨‍💼 Interface Administrateur</h3>';
+        
+        html += `
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 20px 0; border-left: 5px solid #34495e;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h4 style="color: #34495e; margin-bottom: 10px;">🔧 Outils d'Administration</h4>
+                    <p style="color: #666;">Gérez les utilisateurs et validez les demandes d'absence via les onglets dédiés.</p>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #3498db;">
+                        <h5 style="color: #3498db; margin-bottom: 10px;">👥 Utilisateurs</h5>
+                        <p style="color: #666; font-size: 14px;">Gérer les comptes utilisateurs</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #f39c12;">
+                        <h5 style="color: #f39c12; margin-bottom: 10px;">📋 Demandes</h5>
+                        <p style="color: #666; font-size: 14px;">Approuver/refuser les demandes</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #27ae60;">
+                        <h5 style="color: #27ae60; margin-bottom: 10px;">📅 Calendrier</h5>
+                        <p style="color: #666; font-size: 14px;">Vue d'ensemble des absences</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e74c3c; cursor: pointer;" onclick="openGoogleCalendarAdmin()">
+                        <h5 style="color: #e74c3c; margin-bottom: 10px;">📧 Google Calendar</h5>
+                        <p style="color: #666; font-size: 14px;">Synchronisation automatique</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        dashboardContent.innerHTML = html;
+        
+    } else {
+        // Dashboard pour utilisateurs normaux
+        try {
+            const dashboardData = await apiCall('/dashboard');
+            
+            let html = '<h3>🌴 Compteur de Congés Payés</h3>';
+            
+            // Calcul du pourcentage de congés utilisés pour la barre de progression
+            const percentageUsed = (dashboardData.used_leave_days / dashboardData.total_leave_days) * 100;
+            
+            html += `
+                <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 20px 0; border-left: 5px solid #3498db;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${dashboardData.remaining_leave_days}</div>
+                            <div style="color: #666; font-size: 14px;">Jours restants</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${dashboardData.used_leave_days}</div>
+                            <div style="color: #666; font-size: 14px;">Jours utilisés</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #3498db;">${dashboardData.total_leave_days}</div>
+                            <div style="color: #666; font-size: 14px;">Total annuel</div>
+                        </div>
+                    </div>
+                    <div style="background: #e9ecef; border-radius: 10px; height: 20px; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, #27ae60 0%, #f39c12 70%, #e74c3c 100%); height: 100%; width: ${Math.min(percentageUsed, 100)}%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
+                        ${percentageUsed.toFixed(1)}% des congés utilisés
+                    </div>
+                </div>
+            `;
+            
+            html += '<h3>📊 Résumé de vos demandes</h3>';
+            
+            html += `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
+                    <div style="background: #f39c12; color: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <h4>En attente</h4>
+                        <h2>${dashboardData.pending_requests}</h2>
+                    </div>
+                    <div style="background: #27ae60; color: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <h4>Approuvées</h4>
+                        <h2>${dashboardData.approved_requests}</h2>
+                    </div>
+                </div>
+            `;
+            
+            dashboardContent.innerHTML = html;
+            
+        } catch (error) {
+            dashboardContent.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+        }
+    }
+}''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/calendar.js': {
+            'content': '''// Gestion du calendrier (vue mensuelle admin, vue annuelle utilisateur)
+
+class Calendar {
+    constructor() {
+        this.currentDate = new Date();
+        this.currentYear = this.currentDate.getFullYear();
+        this.currentMonth = this.currentDate.getMonth();
+        this.isAdmin = false;
+        this.events = [];
+        this.monthNames = [
+            'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+            'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+        ];
+    }
+
+    async init() {
+        this.isAdmin = currentUser && currentUser.role === 'admin';
+        
+        this.setupEventListeners();
+        await this.showCalendar();
+    }
+
+    setupEventListeners() {
+        const prevBtn = document.getElementById('prev-period');
+        const nextBtn = document.getElementById('next-period');
+        const todayBtn = document.getElementById('today-btn');
+        
+        if (prevBtn) prevBtn.addEventListener('click', () => this.navigatePrevious());
+        if (nextBtn) nextBtn.addEventListener('click', () => this.navigateNext());
+        if (todayBtn) todayBtn.addEventListener('click', () => this.goToToday());
+        
+
+    }
+
+    navigatePrevious() {
+        if (this.isAdmin) {
+            this.currentMonth--;
+            if (this.currentMonth < 0) {
+                this.currentMonth = 11;
+                this.currentYear--;
+            }
+        } else {
+            this.currentYear--;
+        }
+        this.showCalendar();
+    }
+
+    navigateNext() {
+        if (this.isAdmin) {
+            this.currentMonth++;
+            if (this.currentMonth > 11) {
+                this.currentMonth = 0;
+                this.currentYear++;
+            }
+        } else {
+            this.currentYear++;
+        }
+        this.showCalendar();
+    }
+
+    goToToday() {
+        const today = new Date();
+        this.currentYear = today.getFullYear();
+        this.currentMonth = today.getMonth();
+        this.showCalendar();
+    }
+
+    async showCalendar() {
+        if (this.isAdmin) {
+            await this.showMonthlyView();
+        } else {
+            await this.showYearlyView();
+        }
+    }
+
+    async showMonthlyView() {
+        document.getElementById('monthly-calendar').style.display = 'block';
+        document.getElementById('yearly-calendar').style.display = 'none';
+        document.getElementById('calendar-summary').style.display = 'none';
+
+        // Mettre à jour le titre
+        const title = `${this.monthNames[this.currentMonth]} ${this.currentYear}`;
+        document.getElementById('calendar-title').textContent = title;
+
+        // Charger les événements du mois
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/calendar/admin?year=${this.currentYear}&month=${this.currentMonth + 1}`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors du chargement du calendrier');
+            }
+
+            this.events = await response.json();
+            this.renderMonthlyCalendar();
+        } catch (error) {
+            console.error('Erreur:', error);
+            showAlert('Erreur lors du chargement du calendrier', 'error');
+        }
+    }
+
+    async showYearlyView() {
+        document.getElementById('monthly-calendar').style.display = 'none';
+        document.getElementById('yearly-calendar').style.display = 'block';
+        document.getElementById('calendar-summary').style.display = 'block';
+
+        // Mettre à jour le titre
+        document.getElementById('calendar-title').textContent = this.currentYear.toString();
+
+        // Charger les événements de l'année et le résumé
+        try {
+            const [eventsResponse, summaryResponse] = await Promise.all([
+                fetch(`${CONFIG.API_BASE_URL}/calendar/user?year=${this.currentYear}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                }),
+                fetch(`${CONFIG.API_BASE_URL}/calendar/summary?year=${this.currentYear}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                })
+            ]);
+
+            if (!eventsResponse.ok || !summaryResponse.ok) {
+                throw new Error('Erreur lors du chargement du calendrier');
+            }
+
+            this.events = await eventsResponse.json();
+            const summary = await summaryResponse.json();
+            
+            // Afficher le résumé
+            const summaryText = `${summary.used_leave_days}/${summary.total_leave_days} jours utilisés - ${summary.remaining_leave_days} jours restants`;
+            document.getElementById('summary-text').textContent = summaryText;
+
+            this.renderYearlyCalendar();
+        } catch (error) {
+            console.error('Erreur:', error);
+            showAlert('Erreur lors du chargement du calendrier', 'error');
+        }
+    }
+
+    renderMonthlyCalendar() {
+        const daysContainer = document.getElementById('calendar-days');
+        daysContainer.innerHTML = '';
+
+        const firstDay = new Date(this.currentYear, this.currentMonth, 1);
+        const lastDay = new Date(this.currentYear, this.currentMonth + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = (firstDay.getDay() + 6) % 7; // Lundi = 0
+
+        // Ajouter les jours vides du mois précédent
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day empty';
+            daysContainer.appendChild(dayDiv);
+        }
+
+        // Ajouter les jours du mois
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'calendar-day';
+            
+            const dayNumber = document.createElement('div');
+            dayNumber.className = 'day-number';
+            dayNumber.textContent = day;
+            dayDiv.appendChild(dayNumber);
+
+            // Vérifier si c'est aujourd'hui
+            const today = new Date();
+            if (today.getFullYear() === this.currentYear && 
+                today.getMonth() === this.currentMonth && 
+                today.getDate() === day) {
+                dayDiv.classList.add('today');
+            }
+
+            // Ajouter les événements du jour
+            const dayDate = new Date(this.currentYear, this.currentMonth, day);
+            const dayEvents = this.getEventsForDate(dayDate);
+            
+            if (dayEvents.length > 0) {
+                const eventsContainer = document.createElement('div');
+                eventsContainer.className = 'day-events';
+                
+                dayEvents.forEach(event => {
+                    const eventDiv = document.createElement('div');
+                    // Ajouter une classe spéciale pour les déclarations de maladie
+                    let eventClass = `event event-${event.status} event-${event.type}`;
+                    if (event.event_source === 'sickness_declaration') {
+                        eventClass += ' event-sickness-declaration';
+                    }
+                    eventDiv.className = eventClass;
+                    eventDiv.textContent = this.truncateText(event.title, 20);
+                    eventDiv.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.showEventModal(event);
+                    });
+                    eventsContainer.appendChild(eventDiv);
+                });
+                
+                dayDiv.appendChild(eventsContainer);
+            }
+
+            daysContainer.appendChild(dayDiv);
+        }
+    }
+
+    renderYearlyCalendar() {
+        const yearGrid = document.querySelector('.year-grid');
+        if (!yearGrid) {
+            console.error('Element .year-grid not found!');
+            return;
+        }
+        yearGrid.innerHTML = '';
+        
+
+
+        for (let month = 0; month < 12; month++) {
+            const monthDiv = document.createElement('div');
+            monthDiv.className = 'mini-month';
+            
+            const monthHeader = document.createElement('div');
+            monthHeader.className = 'mini-month-header';
+            monthHeader.textContent = this.monthNames[month];
+            monthDiv.appendChild(monthHeader);
+
+            const monthGrid = document.createElement('div');
+            monthGrid.className = 'mini-month-grid';
+            
+            // En-têtes des jours de la semaine (version courte)
+            const weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+            weekdays.forEach(day => {
+                const weekdayDiv = document.createElement('div');
+                weekdayDiv.className = 'mini-weekday';
+                weekdayDiv.textContent = day;
+                monthGrid.appendChild(weekdayDiv);
+            });
+
+            // Jours du mois
+            const firstDay = new Date(this.currentYear, month, 1);
+            const lastDay = new Date(this.currentYear, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = (firstDay.getDay() + 6) % 7;
+
+            // Jours vides
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'mini-day empty';
+                monthGrid.appendChild(emptyDiv);
+            }
+
+            // Jours du mois
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'mini-day';
+                dayDiv.textContent = day;
+
+                // Vérifier si c'est aujourd'hui
+                const today = new Date();
+                if (today.getFullYear() === this.currentYear && 
+                    today.getMonth() === month && 
+                    today.getDate() === day) {
+                    dayDiv.classList.add('today');
+                }
+
+                // Vérifier s'il y a des événements
+                const dayDate = new Date(this.currentYear, month, day);
+                const dayEvents = this.getEventsForDate(dayDate);
+                
+                if (dayEvents.length > 0) {
+                    dayDiv.classList.add('has-events');
+                    // Ajouter une classe pour le type d'événement principal
+                    const primaryEvent = dayEvents[0];
+                    dayDiv.classList.add(`event-${primaryEvent.status}`, `event-${primaryEvent.type}`);
+                    
+                    // Ajouter une classe spéciale si c'est une déclaration de maladie
+                    if (primaryEvent.event_source === 'sickness_declaration') {
+                        dayDiv.classList.add('has-sickness-declaration');
+                    }
+                    
+                    // Ajouter un tooltip ou gérer le clic
+                    dayDiv.title = dayEvents.map(e => e.title).join('\n');
+                    dayDiv.addEventListener('click', () => {
+                        if (dayEvents.length === 1) {
+                            this.showEventModal(dayEvents[0]);
+                        } else {
+                            // Afficher une liste des événements
+                            this.showMultipleEventsModal(dayEvents, dayDate);
+                        }
+                    });
+                }
+
+                monthGrid.appendChild(dayDiv);
+            }
+
+            monthDiv.appendChild(monthGrid);
+            yearGrid.appendChild(monthDiv);
+        }
+    }
+
+    getEventsForDate(date) {
+        return this.events.filter(event => {
+            // Utiliser les dates en format string pour éviter les problèmes de fuseau horaire
+            const dateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+            const eventStart = event.start; // Déjà en format YYYY-MM-DD
+            const eventEnd = event.end; // Déjà en format YYYY-MM-DD
+            
+            return dateStr >= eventStart && dateStr <= eventEnd;
+        });
+    }
+
+    truncateText(text, maxLength) {
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+
+    showEventModal(event) {
+        document.getElementById('event-title').textContent = event.title;
+        document.getElementById('event-user').textContent = event.user_name;
+        
+        // Différencier l'affichage selon le type d'événement
+        if (event.event_source === 'sickness_declaration') {
+            document.getElementById('event-type').textContent = 'Déclaration de maladie';
+        } else {
+            document.getElementById('event-type').textContent = event.type === 'vacances' ? 'Vacances' : 'Maladie';
+        }
+        
+        const startDate = new Date(event.start).toLocaleDateString('fr-FR');
+        const endDate = new Date(event.end).toLocaleDateString('fr-FR');
+        document.getElementById('event-dates').textContent = startDate === endDate ? startDate : `${startDate} - ${endDate}`;
+        
+        // Affichage du statut différent pour les déclarations de maladie
+        if (event.event_source === 'sickness_declaration') {
+            const emailSent = event.title.includes('✉️');
+            document.getElementById('event-status').textContent = emailSent ? 'Email envoyé' : 'Email non envoyé';
+        } else {
+            const statusText = {
+                'en_attente': 'En attente',
+                'approuve': 'Approuvé',
+                'refuse': 'Refusé'
+            }[event.status] || event.status;
+            document.getElementById('event-status').textContent = statusText;
+        }
+        
+        const reasonRow = document.getElementById('event-reason-row');
+        if (event.reason) {
+            document.getElementById('event-reason').textContent = event.reason;
+            reasonRow.style.display = 'block';
+        } else {
+            reasonRow.style.display = 'none';
+        }
+
+        document.getElementById('event-modal').style.display = 'flex';
+    }
+
+    showMultipleEventsModal(events, date) {
+        // Pour simplifier, on affiche juste le premier événement
+        // Dans une vraie app, on pourrait créer une modal spéciale pour plusieurs événements
+        this.showEventModal(events[0]);
+    }
+}
+
+function closeEventModal() {
+    document.getElementById('event-modal').style.display = 'none';
+}
+
+// Initialiser le calendrier quand la section est affichée
+let calendar = null;
+
+async function showCalendarSection() {
+    const calendarSection = document.getElementById('calendar-section');
+    if (!calendarSection) {
+        console.error('calendar-section element not found!');
+        return;
     }
     
-    return static_files.get(file_path, None) 
+    calendarSection.style.display = 'block';
+    
+    if (!calendar) {
+        calendar = new Calendar();
+        await calendar.init();
+    } else {
+        await calendar.showCalendar();
+    }
+}''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/admin.js': {
+            'content': '''// Fonctions administrateur
+async function loadUsers() {
+    const usersList = document.getElementById('users-list');
+    
+    try {
+        const users = await apiCall('/users/');
+        
+        let html = '<table class="table"><thead><tr><th>Email</th><th>Nom</th><th>Rôle</th><th>Statut</th><th>Congés</th><th>Actions</th></tr></thead><tbody>';
+        
+        users.forEach(user => {
+            // Ne pas permettre à l'admin de gérer son propre compte
+            const isCurrentUser = currentUser && user.id === currentUser.id;
+            const isAdmin = user.role === 'admin';
+            
+            let actionsHtml;
+            if (isCurrentUser) {
+                actionsHtml = '<span class="text-muted">Compte actuel</span>';
+            } else if (isAdmin) {
+                // Pour les autres admins, ne pas afficher le bouton Détails
+                actionsHtml = `<button class="btn btn-warning" onclick="editUser(${user.id})">Modifier</button>
+                               <button class="btn btn-danger" onclick="deleteUser(${user.id})">Supprimer</button>`;
+            } else {
+                // Pour les utilisateurs normaux, afficher tous les boutons
+                actionsHtml = `<button class="btn btn-info" onclick="showUserAbsenceSummary(${user.id})" title="Voir le résumé des absences">📊 Détails</button>
+                               <button class="btn btn-warning" onclick="editUser(${user.id})">Modifier</button>
+                               <button class="btn btn-danger" onclick="deleteUser(${user.id})">Supprimer</button>`;
+            }
+            
+            // Ne pas afficher le décompte de congés pour les administrateurs
+            const leaveDisplay = user.role === 'admin' ? 
+                '<span class="text-muted">—</span>' : 
+                `${user.annual_leave_days || 25} jours`;
+            
+            html += `
+                <tr>
+                    <td>${user.email}</td>
+                    <td>${user.first_name} ${user.last_name}</td>
+                    <td>${user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</td>
+                    <td><span class="status-badge ${user.is_active ? 'status-approuve' : 'status-refuse'}">${user.is_active ? 'Actif' : 'Inactif'}</span></td>
+                    <td>${leaveDisplay}</td>
+                    <td>
+                        ${actionsHtml}
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        usersList.innerHTML = html;
+        
+    } catch (error) {
+        usersList.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+async function loadAllRequests() {
+    const requestsList = document.getElementById('all-requests-list');
+    
+    try {
+        const requests = await apiCall('/absence-requests/all');
+        
+        if (requests.length === 0) {
+            requestsList.innerHTML = '<div class="alert alert-info">Aucune demande de vacances en attente.</div>';
+            return;
+        }
+        
+        let html = '<h3>🏖️ Demandes de Vacances</h3>';
+        
+        // Statistiques rapides
+        const totalRequests = requests.length;
+        const pendingRequests = requests.filter(r => r.status === 'en_attente').length;
+        const approvedRequests = requests.filter(r => r.status === 'approuve').length;
+        const rejectedRequests = requests.filter(r => r.status === 'refuse').length;
+        
+        html += `
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; text-align: center;">
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: #3498db;">${totalRequests}</div>
+                        <div style="color: #666; font-size: 12px;">Total</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: ${pendingRequests > 0 ? '#f39c12' : '#27ae60'};">${pendingRequests}</div>
+                        <div style="color: #666; font-size: 12px;">En attente</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: #27ae60;">${approvedRequests}</div>
+                        <div style="color: #666; font-size: 12px;">Approuvées</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: bold; color: #e74c3c;">${rejectedRequests}</div>
+                        <div style="color: #666; font-size: 12px;">Refusées</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        html += '<table class="table"><thead><tr><th>👤 Utilisateur</th><th>📅 Période</th><th>📝 Raison</th><th>📊 Statut</th><th>🕐 Créée le</th><th>⚡ Actions</th></tr></thead><tbody>';
+        
+        requests.forEach(request => {
+            const startDate = new Date(request.start_date).toLocaleDateString('fr-FR');
+            const endDate = new Date(request.end_date).toLocaleDateString('fr-FR');
+            const createdDate = new Date(request.created_at).toLocaleDateString('fr-FR');
+            
+            // Style de la ligne selon le statut
+            let rowStyle = '';
+            if (request.status === 'en_attente') {
+                rowStyle = 'background-color: #fff3cd; border-left: 3px solid #ffc107;';
+            } else if (request.status === 'refuse') {
+                rowStyle = 'background-color: #f8d7da; border-left: 3px solid #dc3545;';
+            }
+            
+            // Actions possibles
+            let actions = '';
+            if (request.status === 'en_attente') {
+                actions = `<button class="btn btn-sm btn-success" onclick="approveRequest(${request.id})" title="Approuver la demande">✅ Approuver</button>
+                           <button class="btn btn-sm btn-danger" onclick="rejectRequest(${request.id})" title="Refuser la demande">❌ Refuser</button>`;
+            } else {
+                actions = '<span style="color: #666;">—</span>';
+            }
+            
+            html += `
+                <tr style="${rowStyle}">
+                    <td><strong>${request.user.first_name} ${request.user.last_name}</strong><br><small style="color: #666;">${request.user.email}</small></td>
+                    <td><strong>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</strong></td>
+                    <td>${request.reason ? `<em>"${request.reason}"</em>` : '<span style="color: #999;">Non spécifiée</span>'}</td>
+                    <td><span class="status-badge status-${request.status}">${request.status.replace('_', ' ')}</span></td>
+                    <td><small>${createdDate}</small></td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        requestsList.innerHTML = html;
+        
+    } catch (error) {
+        requestsList.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Fonctions pour le formulaire d'absence admin
+async function showAdminAbsenceForm() {
+    const modal = document.getElementById('admin-absence-modal');
+    modal.style.display = 'flex';
+    
+    // Charger la liste des utilisateurs
+    try {
+        const users = await apiCall('/users/');
+        const userSelect = document.getElementById('admin-absence-user');
+        userSelect.innerHTML = '<option value="">Sélectionner un utilisateur...</option>';
+        
+        users.forEach(user => {
+            // Ne pas inclure les admins dans la liste
+            if (user.role !== 'admin') {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.first_name} ${user.last_name} (${user.email})`;
+                userSelect.appendChild(option);
+            }
+        });
+        
+        // Définir les dates par défaut
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        document.getElementById('admin-start-date').value = tomorrow.toISOString().split('T')[0];
+        document.getElementById('admin-end-date').value = tomorrow.toISOString().split('T')[0];
+        
+    } catch (error) {
+        showAlert('Erreur lors du chargement des utilisateurs: ' + error.message, 'error');
+    }
+}
+
+function hideAdminAbsenceForm() {
+    const modal = document.getElementById('admin-absence-modal');
+    modal.style.display = 'none';
+    document.getElementById('admin-absence-form-element').reset();
+}
+
+// Fermer la modal en cliquant à l'extérieur
+document.addEventListener('DOMContentLoaded', function() {
+    const adminAbsenceModal = document.getElementById('admin-absence-modal');
+    if (adminAbsenceModal) {
+        adminAbsenceModal.addEventListener('click', function(e) {
+            if (e.target === adminAbsenceModal) {
+                hideAdminAbsenceForm();
+            }
+        });
+    }
+});
+
+// Gestionnaire de soumission du formulaire admin
+document.addEventListener('DOMContentLoaded', function() {
+    const adminAbsenceForm = document.getElementById('admin-absence-form-element');
+    if (adminAbsenceForm) {
+        adminAbsenceForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                user_id: parseInt(document.getElementById('admin-absence-user').value),
+                type: document.getElementById('admin-absence-type').value,
+                start_date: document.getElementById('admin-start-date').value,
+                end_date: document.getElementById('admin-end-date').value,
+                reason: document.getElementById('admin-reason').value || null,
+                admin_comment: document.getElementById('admin-comment').value || null,
+                status: 'approuve'
+            };
+            
+            if (!formData.user_id) {
+                showAlert('Veuillez sélectionner un utilisateur', 'error');
+                return;
+            }
+            
+            if (new Date(formData.start_date) > new Date(formData.end_date)) {
+                showAlert('La date de fin doit être postérieure à la date de début', 'error');
+                return;
+            }
+            
+            try {
+                await apiCall('/absence-requests/admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                showAlert('Absence créée avec succès', 'success');
+                hideAdminAbsenceForm();
+                
+                // Recharger le calendrier si on est sur la vue calendrier
+                if (calendar && currentUser.role === 'admin') {
+                    await calendar.showCalendar();
+                }
+                
+            } catch (error) {
+                showAlert('Erreur lors de la création de l\'absence: ' + error.message, 'error');
+            }
+        });
+    }
+});
+
+// Fonction pour afficher le résumé des absences d'un utilisateur
+async function showUserAbsenceSummary(userId) {
+    const modal = document.getElementById('user-absence-modal');
+    const summaryDiv = document.getElementById('user-absence-summary');
+    
+    modal.style.display = 'flex';
+    summaryDiv.innerHTML = '<div class="loading">Chargement...</div>';
+    
+    try {
+        const summary = await apiCall(`/users/${userId}/absence-summary`);
+        
+        const user = summary.user;
+        document.getElementById('user-absence-title').textContent = 
+            `Résumé des absences - ${user.first_name} ${user.last_name}`;
+        
+        let html = `
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="color: #34495e; margin-bottom: 15px;">📊 Statistiques générales</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px;">
+                    <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; border: 2px solid #3498db;">
+                        <div style="font-size: 24px; font-weight: bold; color: #3498db;">${summary.total_absence_days}</div>
+                        <div style="color: #666; font-size: 14px;">Jours d'absence total</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; border: 2px solid #27ae60;">
+                        <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${summary.vacation_days}</div>
+                        <div style="color: #666; font-size: 14px;">Jours de vacances</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; border: 2px solid #e74c3c;">
+                        <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${summary.sick_days}</div>
+                        <div style="color: #666; font-size: 14px;">Jours de maladie</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; border: 2px solid #f39c12;">
+                        <div style="font-size: 24px; font-weight: bold; color: #f39c12;">${summary.pending_requests}</div>
+                        <div style="color: #666; font-size: 14px;">En attente</div>
+                    </div>
+                    <div style="text-align: center; background: white; padding: 15px; border-radius: 8px; border: 2px solid #9b59b6;">
+                        <div style="font-size: 24px; font-weight: bold; color: #9b59b6;">${summary.approved_requests}</div>
+                        <div style="color: #666; font-size: 14px;">Approuvées</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        if (summary.recent_absences && summary.recent_absences.length > 0) {
+            html += `
+                <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                    <h4 style="color: #34495e; margin-bottom: 15px;">📅 Absences récentes</h4>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Période</th>
+                                <th>Statut</th>
+                                <th>Raison</th>
+                                <th>Créée le</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            summary.recent_absences.forEach(absence => {
+                const startDate = new Date(absence.start_date).toLocaleDateString('fr-FR');
+                const endDate = new Date(absence.end_date).toLocaleDateString('fr-FR');
+                const createdDate = new Date(absence.created_at).toLocaleDateString('fr-FR');
+                
+                const statusText = {
+                    'en_attente': 'En attente',
+                    'approuve': 'Approuvé',
+                    'refuse': 'Refusé'
+                }[absence.status] || absence.status;
+                
+                const typeText = absence.type === 'vacances' ? 'Vacances' : 'Maladie';
+                
+                html += `
+                    <tr>
+                        <td><span class="status-badge event-${absence.type}">${typeText}</span></td>
+                        <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
+                        <td><span class="status-badge status-${absence.status}">${statusText}</span></td>
+                        <td>${absence.reason || 'Non spécifiée'}</td>
+                        <td>${createdDate}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            html += `
+                <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd; text-align: center;">
+                    <p style="color: #666; margin: 0;">Aucune absence enregistrée pour cet utilisateur.</p>
+                </div>
+            `;
+        }
+        
+        summaryDiv.innerHTML = html;
+        
+    } catch (error) {
+        summaryDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+function closeUserAbsenceModal() {
+    document.getElementById('user-absence-modal').style.display = 'none';
+}
+
+// Fonction pour charger les déclarations de maladie (admin)
+async function loadAdminSicknessDeclarations() {
+    const sicknessListDiv = document.getElementById('admin-sickness-list');
+    
+    try {
+        sicknessListDiv.innerHTML = '<div class="loading">Chargement...</div>';
+        const html = await loadAllSicknessDeclarations();
+        sicknessListDiv.innerHTML = html;
+        
+    } catch (error) {
+        sicknessListDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+async function approveRequest(requestId) {
+    try {
+        await apiCall(`/absence-requests/${requestId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                status: 'approuve',
+                admin_comment: 'Demande approuvée'
+            })
+        });
+        
+        showAlert('Demande approuvée !');
+        loadAllRequests();
+        
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function rejectRequest(requestId) {
+    const reason = prompt('Raison du refus (optionnel):');
+    
+    try {
+        await apiCall(`/absence-requests/${requestId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                status: 'refuse',
+                admin_comment: reason || 'Demande refusée'
+            })
+        });
+        
+        showAlert('Demande refusée.');
+        loadAllRequests();
+        
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function editUser(userId) {
+    try {
+        const user = await apiCall(`/users/${userId}`);
+        
+        // Remplir le formulaire avec les données existantes
+        document.getElementById('user-email').value = user.email;
+        document.getElementById('user-first-name').value = user.first_name;
+        document.getElementById('user-last-name').value = user.last_name;
+        document.getElementById('user-role').value = user.role;
+        
+        // Changer le formulaire en mode édition
+        const form = document.getElementById('user-form');
+        form.setAttribute('data-edit-id', userId);
+        
+        showNewUserForm();
+        
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}
+
+async function deleteUser(userId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+        return;
+    }
+    
+    try {
+        await apiCall(`/users/${userId}`, {
+            method: 'DELETE'
+        });
+        
+        showAlert('Utilisateur supprimé avec succès !');
+        loadUsers();
+        
+    } catch (error) {
+        showAlert(error.message, 'error');
+    }
+}''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/sickness.js': {
+            'content': '''// Fonctions pour les déclarations de maladie
+
+function showSicknessDeclarationForm() {
+    // Fermer le formulaire de demande de congé s'il est ouvert
+    hideNewRequestForm();
+    
+    document.getElementById('sickness-declaration-form').style.display = 'block';
+    
+    // Définir la date par défaut à aujourd'hui
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('sickness-start-date').value = today;
+    document.getElementById('sickness-end-date').value = today;
+}
+
+function hideSicknessDeclarationForm() {
+    document.getElementById('sickness-declaration-form').style.display = 'none';
+    document.getElementById('sickness-form').reset();
+}
+
+// Gestionnaire de soumission du formulaire de déclaration de maladie
+document.addEventListener('DOMContentLoaded', function() {
+    const sicknessForm = document.getElementById('sickness-form');
+    if (sicknessForm) {
+        sicknessForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const startDate = document.getElementById('sickness-start-date').value;
+            const endDate = document.getElementById('sickness-end-date').value;
+            const description = document.getElementById('sickness-description').value;
+            const pdfFile = document.getElementById('sickness-pdf').files[0];
+            
+            // Validations
+            if (!startDate || !endDate) {
+                showAlert('Veuillez sélectionner les dates de début et de fin', 'error');
+                return;
+            }
+            
+            if (new Date(startDate) > new Date(endDate)) {
+                showAlert('La date de fin doit être postérieure à la date de début', 'error');
+                return;
+            }
+            
+            if (!pdfFile) {
+                showAlert('Veuillez sélectionner un fichier PDF', 'error');
+                return;
+            }
+            
+            if (pdfFile.type !== 'application/pdf') {
+                showAlert('Seuls les fichiers PDF sont acceptés', 'error');
+                return;
+            }
+            
+            if (pdfFile.size > 10 * 1024 * 1024) { // 10MB
+                showAlert('Le fichier est trop volumineux (maximum 10MB)', 'error');
+                return;
+            }
+            
+            // Préparer les données du formulaire
+            const formData = new FormData();
+            formData.append('start_date', startDate);
+            formData.append('end_date', endDate);
+            formData.append('description', description);
+            formData.append('pdf_file', pdfFile);
+            
+            try {
+                // Désactiver le bouton de soumission
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '📧 Envoi en cours...';
+                
+                const response = await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Erreur lors de l\'envoi de la déclaration');
+                }
+                
+                const result = await response.json();
+                
+                showAlert('Déclaration de maladie envoyée avec succès ! Un email a été envoyé à hello.obvious@gmail.com', 'success');
+                hideSicknessDeclarationForm();
+                
+                // Recharger la liste des demandes si on est sur l'onglet procédure
+                if (document.getElementById('procedure').classList.contains('active')) {
+                    loadRequests();
+                }
+                
+            } catch (error) {
+                showAlert('Erreur lors de l\'envoi de la déclaration: ' + error.message, 'error');
+            } finally {
+                // Réactiver le bouton
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    }
+});
+
+// Fonction pour charger les déclarations de maladie de l'utilisateur
+async function loadSicknessDeclarations() {
+    try {
+        const declarations = await apiCall('/sickness-declarations/');
+        
+        let html = '<h3>Mes déclarations de maladie</h3>';
+        
+        if (declarations.length === 0) {
+            html += '<p>Aucune déclaration de maladie.</p>';
+        } else {
+            html += '<table class="table"><thead><tr><th>Période</th><th>Description</th><th>PDF</th><th>Email envoyé</th><th>Créée le</th></tr></thead><tbody>';
+            
+            declarations.forEach(declaration => {
+                const startDate = new Date(declaration.start_date).toLocaleDateString('fr-FR');
+                const endDate = new Date(declaration.end_date).toLocaleDateString('fr-FR');
+                const createdDate = new Date(declaration.created_at).toLocaleDateString('fr-FR');
+                
+                html += `
+                    <tr>
+                        <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
+                        <td>${declaration.description || 'Non spécifiée'}</td>
+                        <td>${declaration.pdf_filename ? `✅ ${declaration.pdf_filename}` : '❌ Aucun fichier'}</td>
+                        <td><span class="status-badge ${declaration.email_sent ? 'status-approuve' : 'status-refuse'}">${declaration.email_sent ? 'Envoyé' : 'Non envoyé'}</span></td>
+                        <td>${createdDate}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+        }
+        
+        return html;
+        
+    } catch (error) {
+        return `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Fonction pour charger les déclarations de maladie pour les admins
+async function loadAllSicknessDeclarations() {
+    try {
+        const declarations = await apiCall('/sickness-declarations/');
+        
+        let html = '<h3>🏥 Déclarations de Maladie - Vue Administrateur</h3>';
+        
+        if (declarations.length === 0) {
+            html += '<div class="alert alert-info">Aucune déclaration de maladie pour le moment.</div>';
+        } else {
+            // Statistiques rapides
+            const totalDeclarations = declarations.length;
+            const emailsSent = declarations.filter(d => d.email_sent).length;
+            const withPdf = declarations.filter(d => d.pdf_filename).length;
+            const unviewed = declarations.filter(d => !d.viewed_by_admin).length;
+            
+            html += `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; text-align: center;">
+                        <div>
+                            <div style="font-size: 20px; font-weight: bold; color: #3498db;">${totalDeclarations}</div>
+                            <div style="color: #666; font-size: 12px;">Total</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: bold; color: ${emailsSent > 0 ? '#27ae60' : '#e74c3c'};">${emailsSent}</div>
+                            <div style="color: #666; font-size: 12px;">Emails envoyés</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: bold; color: ${withPdf > 0 ? '#27ae60' : '#e74c3c'};">${withPdf}</div>
+                            <div style="color: #666; font-size: 12px;">Avec PDF</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 20px; font-weight: bold; color: ${unviewed > 0 ? '#f39c12' : '#27ae60'};">${unviewed}</div>
+                            <div style="color: #666; font-size: 12px;">Non vues</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            html += '<table class="table"><thead><tr><th>👤 Utilisateur</th><th>📅 Période</th><th>📝 Description</th><th>📄 Document PDF</th><th>📧 Email</th><th>👁️ Statut Admin</th><th>🕐 Créée le</th><th>⚡ Actions</th></tr></thead><tbody>';
+            
+            declarations.forEach(declaration => {
+                const startDate = new Date(declaration.start_date).toLocaleDateString('fr-FR');
+                const endDate = new Date(declaration.end_date).toLocaleDateString('fr-FR');
+                const createdDate = new Date(declaration.created_at).toLocaleDateString('fr-FR');
+                
+                // Style de la ligne selon le statut
+                let rowStyle = '';
+                if (!declaration.viewed_by_admin) {
+                    rowStyle = 'background-color: #fff3cd; border-left: 3px solid #ffc107;';
+                }
+                
+                // Statut du PDF avec plus de détails
+                let pdfStatus = '❌ <span style="color: #e74c3c;">Aucun document</span>';
+                if (declaration.pdf_filename) {
+                    pdfStatus = `✅ <strong style="color: #27ae60;">${declaration.pdf_filename}</strong>`;
+                }
+                
+                // Statut email avec plus de clarté
+                const emailStatus = declaration.email_sent ? 
+                    '✅ <span style="color: #27ae60; font-weight: bold;">Envoyé</span>' : 
+                    '❌ <span style="color: #e74c3c; font-weight: bold;">Non envoyé</span>';
+                
+                // Actions possibles
+                let actions = '';
+                if (!declaration.viewed_by_admin) {
+                    actions += `<button class="btn btn-sm btn-success" onclick="markSicknessAsViewed(${declaration.id})" title="Marquer comme vue">👁️ Marquer vue</button> `;
+                }
+                if (declaration.pdf_filename && !declaration.email_sent) {
+                    actions += `<button class="btn btn-sm btn-warning" onclick="resendSicknessEmail(${declaration.id})" title="Renvoyer l'email">📧 Renvoyer</button>`;
+                }
+                if (!actions) {
+                    actions = '<span style="color: #666;">—</span>';
+                }
+                
+                html += `
+                    <tr style="${rowStyle}">
+                        <td><strong>${declaration.user.first_name} ${declaration.user.last_name}</strong><br><small style="color: #666;">${declaration.user.email}</small></td>
+                        <td><strong>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</strong></td>
+                        <td>${declaration.description ? `<em>"${declaration.description}"</em>` : '<span style="color: #999;">Non spécifiée</span>'}</td>
+                        <td>${pdfStatus}</td>
+                        <td>${emailStatus}</td>
+                        <td><span class="status-badge ${declaration.viewed_by_admin ? 'status-approuve' : 'status-en_attente'}">${declaration.viewed_by_admin ? '✅ Vue' : '⏳ À voir'}</span></td>
+                        <td><small>${createdDate}</small></td>
+                        <td>${actions}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+        }
+        
+        return html;
+        
+    } catch (error) {
+        return `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Fonction pour marquer une déclaration comme vue par l'admin
+async function markSicknessAsViewed(declarationId) {
+    try {
+        await apiCall(`/sickness-declarations/${declarationId}/mark-viewed`, {
+            method: 'POST'
+        });
+        
+        showAlert('Déclaration marquée comme vue !', 'success');
+        // Recharger la liste
+        loadAdminSicknessDeclarations();
+        
+    } catch (error) {
+        showAlert(`Erreur: ${error.message}`, 'error');
+    }
+}
+
+// Fonction pour renvoyer l'email d'une déclaration
+async function resendSicknessEmail(declarationId) {
+    if (!confirm('Voulez-vous vraiment renvoyer l\'email de cette déclaration de maladie ?')) {
+        return;
+    }
+    
+    try {
+        await apiCall(`/sickness-declarations/${declarationId}/resend-email`, {
+            method: 'POST'
+        });
+        
+        showAlert('Email renvoyé avec succès !', 'success');
+        // Recharger la liste
+        loadAdminSicknessDeclarations();
+        
+    } catch (error) {
+        showAlert(`Erreur lors de l'envoi: ${error.message}`, 'error');
+    }
+}''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/utils.js': {
+            'content': '''// Utilitaires d'affichage
+function showAlert(message, type = 'success') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, CONFIG.ALERT_TIMEOUT);
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(CONFIG.DATE_FORMAT);
+}
+
+function formatDateForInput(dateString) {
+    const date = new Date(dateString);
+    return date.toISOString().slice(0, 10); // Format YYYY-MM-DD pour input type="date"
+}
+
+// Fonction pour ouvrir l'administration Google Calendar
+function openGoogleCalendarAdmin() {
+    // Ouvrir dans un nouvel onglet
+    window.open('/static/templates/google-calendar-admin.html', '_blank');
+}
+
+// Utilitaires de navigation
+function showTab(tabName) {
+    // Masquer tous les contenus
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Désactiver tous les onglets
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Activer l'onglet cliqué
+    event.target.classList.add('active');
+    
+    // Afficher le contenu correspondant
+    const content = document.getElementById(tabName);
+    if (content) {
+        content.classList.add('active');
+        
+        // Charger les données selon l'onglet
+        switch(tabName) {
+            case 'dashboard':
+                loadDashboard();
+                break;
+            case 'calendar':
+                loadCalendar();
+                break;
+            case 'procedure':
+                loadUserRequests();
+                break;
+            case 'admin-users':
+                loadUsers();
+                break;
+            case 'admin-requests':
+                // Charger les deux types de demandes
+                loadAllRequests();
+                loadAdminSicknessDeclarations();
+                break;
+        }
+    }
+}
+
+// Fonction pour gérer les sous-onglets
+function showSubTab(subTabName) {
+    // Masquer tous les contenus de sous-onglets
+    document.querySelectorAll('.sub-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Désactiver tous les sous-onglets
+    document.querySelectorAll('.sub-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Activer le sous-onglet cliqué
+    event.target.classList.add('active');
+    
+    // Afficher le contenu correspondant
+    const content = document.getElementById(subTabName);
+    if (content) {
+        content.classList.add('active');
+    }
+}
+
+// API Calls
+async function apiCall(endpoint, options = {}) {
+    const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        },
+        ...options
+    };
+    
+    if (authToken) {
+        config.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+    
+    try {
+        const response = await fetch(url, config);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.detail || 'Erreur API');
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Erreur API:', error);
+        throw error;
+    }
+}
+
+// Utilitaires de formulaire
+
+function showNewUserForm() {
+    document.getElementById('new-user-form').style.display = 'block';
+}
+
+function hideNewUserForm() {
+    document.getElementById('new-user-form').style.display = 'none';
+    document.getElementById('user-form').reset();
+}
+
+// Fonctions pour les demandes d'absence
+function showNewRequestForm() {
+    // Fermer le formulaire de déclaration de maladie s'il est ouvert
+    hideSicknessDeclarationForm();
+    
+    document.getElementById('new-request-form').style.display = 'block';
+    
+    // Définir la date par défaut à demain
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    document.getElementById('start-date').value = tomorrowStr;
+    document.getElementById('end-date').value = tomorrowStr;
+}
+
+function hideNewRequestForm() {
+    document.getElementById('new-request-form').style.display = 'none';
+    document.getElementById('absence-form').reset();
+}
+
+// Fonction pour charger les demandes de l'utilisateur
+async function loadUserRequests() {
+    const requestsListDiv = document.getElementById('user-requests-list');
+    
+    try {
+        requestsListDiv.innerHTML = '<div class="loading">Chargement...</div>';
+        const requests = await apiCall('/absence-requests/');
+        
+        if (requests.length === 0) {
+            requestsListDiv.innerHTML = '<p>Aucune demande d\'absence.</p>';
+            return;
+        }
+        
+        let html = '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Raison</th><th>Créée le</th></tr></thead><tbody>';
+        
+        requests.forEach(request => {
+            const startDate = new Date(request.start_date).toLocaleDateString('fr-FR');
+            const endDate = new Date(request.end_date).toLocaleDateString('fr-FR');
+            const createdDate = new Date(request.created_at).toLocaleDateString('fr-FR');
+            
+            const statusText = {
+                'en_attente': 'En attente',
+                'approuve': 'Approuvé',
+                'refuse': 'Refusé'
+            }[request.status] || request.status;
+            
+            const typeText = request.type === 'vacances' ? 'Vacances' : 'Maladie';
+            
+            html += `
+                <tr>
+                    <td><span class="status-badge event-${request.type}">${typeText}</span></td>
+                    <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
+                    <td><span class="status-badge status-${request.status}">${statusText}</span></td>
+                    <td>${request.reason || 'Non spécifiée'}</td>
+                    <td>${createdDate}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+        requestsListDiv.innerHTML = html;
+        
+    } catch (error) {
+        requestsListDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Alias pour compatibilité
+function loadRequests() {
+    loadUserRequests();
+}
+
+// Chargement du calendrier
+async function loadCalendar() {
+    try {
+        await showCalendarSection();
+    } catch (error) {
+        console.error('Erreur lors du chargement du calendrier:', error);
+        showAlert('Erreur lors du chargement du calendrier', 'error');
+    }
+}''',
+            'mime_type': 'text/javascript'
+        },
+        '/static/js/main.js': {
+            'content': '''// Event Listeners et initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Formulaire de connexion
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        login(email, password);
+    });
+    
+
+    
+    // Formulaire de demande d'absence
+    const absenceForm = document.getElementById('absence-form');
+    if (absenceForm) {
+        absenceForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                type: document.getElementById('absence-type').value,
+                start_date: document.getElementById('start-date').value,
+                end_date: document.getElementById('end-date').value,
+                reason: document.getElementById('reason').value || null
+            };
+            
+            if (!formData.start_date || !formData.end_date) {
+                showAlert('Veuillez sélectionner les dates de début et de fin', 'error');
+                return;
+            }
+            
+            if (new Date(formData.start_date) > new Date(formData.end_date)) {
+                showAlert('La date de fin doit être postérieure à la date de début', 'error');
+                return;
+            }
+            
+            try {
+                await apiCall('/absence-requests/', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+                
+                showAlert('Demande d\'absence soumise avec succès !', 'success');
+                hideNewRequestForm();
+                loadUserRequests(); // Recharger la liste des demandes
+                
+            } catch (error) {
+                showAlert('Erreur lors de la soumission: ' + error.message, 'error');
+            }
+        });
+    }
+    
+    // Formulaire d'utilisateur
+    document.getElementById('user-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            email: document.getElementById('user-email').value,
+            first_name: document.getElementById('user-first-name').value,
+            last_name: document.getElementById('user-last-name').value,
+            role: document.getElementById('user-role').value,
+            password: document.getElementById('user-password').value
+        };
+        
+        const editId = this.getAttribute('data-edit-id');
+        
+        try {
+            if (editId) {
+                // Mode édition - ne pas envoyer le mot de passe s'il est vide
+                if (!formData.password) {
+                    delete formData.password;
+                }
+                await apiCall(`/users/${editId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
+                showAlert('Utilisateur modifié avec succès !');
+                this.removeAttribute('data-edit-id');
+            } else {
+                // Mode création
+                await apiCall('/users/', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                });
+                showAlert('Utilisateur créé avec succès !');
+            }
+            
+            hideNewUserForm();
+            loadUsers();
+            
+        } catch (error) {
+            showAlert(error.message, 'error');
+        }
+    });
+});
+
+// Exposer les fonctions globalement pour les boutons onclick
+window.showTab = showTab;
+window.logout = logout;
+window.showNewUserForm = showNewUserForm;
+window.hideNewUserForm = hideNewUserForm;
+window.editUser = editUser;
+window.deleteUser = deleteUser;
+window.approveRequest = approveRequest;
+window.rejectRequest = rejectRequest;
+window.closeEventModal = closeEventModal;
+window.showAdminAbsenceForm = showAdminAbsenceForm;
+window.hideAdminAbsenceForm = hideAdminAbsenceForm;
+window.showUserAbsenceSummary = showUserAbsenceSummary;
+window.closeUserAbsenceModal = closeUserAbsenceModal;
+window.showSicknessDeclarationForm = showSicknessDeclarationForm;
+window.hideSicknessDeclarationForm = hideSicknessDeclarationForm;
+window.loadAdminSicknessDeclarations = loadAdminSicknessDeclarations;
+window.markSicknessAsViewed = markSicknessAsViewed;
+window.resendSicknessEmail = resendSicknessEmail;
+window.showNewRequestForm = showNewRequestForm;
+window.hideNewRequestForm = hideNewRequestForm;
+window.loadUserRequests = loadUserRequests;
+window.loadRequests = loadRequests;
+window.showSubTab = showSubTab;''',
+            'mime_type': 'text/javascript'
+        },
+    }
+    
+    return static_files.get(file_path, None)

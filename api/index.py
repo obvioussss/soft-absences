@@ -1,16 +1,47 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-from .database import init_db
-from .handlers import (
-    handle_health_check,
-    handle_root,
-    handle_users,
-    handle_absences,
-    handle_login,
-    handle_static_file,
-    handle_route_not_found
-)
+import sys
+from urllib.parse import urlparse, parse_qs
+import hashlib
+from datetime import datetime, timedelta
+import jwt
+from .database import init_db, verify_password, hash_password
+from .static_files import get_static_content, get_mime_type
+
+# Configuration JWT
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+def create_access_token(data: dict):
+    """Créer un token JWT"""
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(token: str):
+    """Vérifier un token JWT"""
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.JWTError:
+        return None
+
+def get_user_from_token(authorization_header):
+    """Extraire l'utilisateur depuis le token"""
+    if not authorization_header or not authorization_header.startswith("Bearer "):
+        return None
+    
+    token = authorization_header.split(" ")[1]
+    payload = verify_token(token)
+    if payload:
+        return payload.get("sub")
+    return None
 
 def serve_static_file(self, file_path):
     """Sert un fichier statique"""
@@ -20,7 +51,6 @@ def serve_static_file(self, file_path):
         if not result:
             return False
             
-        # Déterminer le type MIME
         mime_type = result["mime_type"]
         content = result["content"]
         
@@ -36,25 +66,194 @@ def serve_static_file(self, file_path):
         print(f"Erreur lors du service du fichier statique {file_path}: {e}")
         return False
 
+def handle_health_check():
+    """Gère la route /health"""
+    return {
+        "status": "OK", 
+        "environment": os.getenv("ENVIRONMENT", "production"),
+        "message": "API fonctionnelle",
+        "database": "SQLite en mémoire",
+        "version": "1.0.0"
+    }
+
+def handle_root():
+    """Gère la route /"""
+    return {
+        "message": "Application de gestion des absences", 
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": [
+            "/", "/health", "/auth/login", "/users", "/absence-requests",
+            "/dashboard", "/calendar", "/sickness-declarations"
+        ]
+    }
+
+def handle_users():
+    """Gère la route /users"""
+    conn = init_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, email, first_name, last_name, role FROM users')
+    users = cursor.fetchall()
+    conn.close()
+    
+    return {
+        "users": [
+            {
+                "id": user[0],
+                "email": user[1],
+                "first_name": user[2],
+                "last_name": user[3],
+                "role": user[4]
+            } for user in users
+        ]
+    }
+
+def handle_absence_requests():
+    """Gère la route /absence-requests"""
+    conn = init_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT a.id, a.type, a.start_date, a.end_date, a.status, a.reason,
+               u.first_name, u.last_name, u.email
+        FROM absence_requests a
+        JOIN users u ON a.user_id = u.id
+        ORDER BY a.created_at DESC
+    ''')
+    absences = cursor.fetchall()
+    conn.close()
+    
+    return {
+        "absence_requests": [
+            {
+                "id": abs[0],
+                "type": abs[1],
+                "start_date": abs[2],
+                "end_date": abs[3],
+                "status": abs[4],
+                "reason": abs[5],
+                "user_name": f"{abs[6]} {abs[7]}",
+                "user_email": abs[8]
+            } for abs in absences
+        ]
+    }
+
+def handle_dashboard():
+    """Gère la route /dashboard"""
+    conn = init_db()
+    cursor = conn.cursor()
+    
+    # Statistiques des absences
+    cursor.execute('''
+        SELECT COUNT(*) as total,
+               SUM(CASE WHEN status = 'EN_ATTENTE' THEN 1 ELSE 0 END) as en_attente,
+               SUM(CASE WHEN status = 'APPROUVE' THEN 1 ELSE 0 END) as approuve,
+               SUM(CASE WHEN status = 'REFUSE' THEN 1 ELSE 0 END) as refuse
+        FROM absence_requests
+    ''')
+    stats = cursor.fetchone()
+    
+    # Utilisateurs
+    cursor.execute('SELECT COUNT(*) FROM users')
+    user_count = cursor.fetchone()[0]
+    
+    conn.close()
+    
+    return {
+        "statistics": {
+            "total_absences": stats[0],
+            "en_attente": stats[1],
+            "approuve": stats[2],
+            "refuse": stats[3],
+            "total_users": user_count
+        }
+    }
+
+def handle_login(data):
+    """Gère la route /auth/login"""
+    email = data.get('email', '')
+    password = data.get('password', '')
+    
+    if not email or not password:
+        return {
+            "error": "Email et mot de passe requis"
+        }
+    
+    conn = init_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = ?', (email,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user and verify_password(password, user[4]):
+        # Créer un token JWT
+        access_token = create_access_token(
+            data={"sub": user[1], "user_id": user[0], "role": user[5]}
+        )
+        
+        return {
+            "success": True,
+            "message": "Connexion réussie",
+            "user": {
+                "id": user[0],
+                "email": user[1],
+                "first_name": user[2],
+                "last_name": user[3],
+                "role": user[5]
+            },
+            "access_token": access_token,
+            "token_type": "bearer"
+        }
+    else:
+        return {
+            "error": "Email ou mot de passe incorrect"
+        }
+
+def handle_static_file(file_path):
+    """Gère les fichiers statiques"""
+    content = get_static_content(file_path)
+    
+    if not content:
+        return None
+    
+    return {
+        "content": content,
+        "mime_type": get_mime_type(file_path)
+    }
+
+def handle_route_not_found(path):
+    """Gère les routes non trouvées"""
+    return {
+        "error": "Route non trouvée",
+        "path": path,
+        "available_routes": [
+            "/", "/health", "/auth/login", "/users", "/absence-requests",
+            "/dashboard", "/calendar", "/sickness-declarations"
+        ]
+    }
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
+            # Parser l'URL
+            parsed_url = urlparse(self.path)
+            path = parsed_url.path
+            
             # Gérer les fichiers statiques
-            if (self.path.startswith('/static/') or 
-                self.path.endswith('.css') or 
-                self.path.endswith('.html') or
-                self.path == '/' or
-                self.path == '/dashboard'):
+            if (path.startswith('/static/') or 
+                path.endswith('.css') or 
+                path.endswith('.html') or
+                path == '/' or
+                path == '/dashboard'):
                 
                 # Mapper les routes vers les fichiers statiques
-                if self.path == '/':
+                if path == '/':
                     file_path = '/static/index.html'
-                elif self.path == '/dashboard':
+                elif path == '/dashboard':
                     file_path = '/static/dashboard.html'
-                elif self.path == '/style.css':
+                elif path == '/style.css':
                     file_path = '/static/style.css'
                 else:
-                    file_path = self.path
+                    file_path = path
                 
                 if serve_static_file(self, file_path):
                     return
@@ -65,7 +264,7 @@ class handler(BaseHTTPRequestHandler):
                     self.end_headers()
                     response = {
                         "error": "Fichier non trouvé",
-                        "path": self.path,
+                        "path": path,
                         "mapped_path": file_path
                     }
                     self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
@@ -76,19 +275,21 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
             self.end_headers()
             
-            if self.path == '/health':
+            if path == '/health':
                 response = handle_health_check()
-            elif self.path == '/':
+            elif path == '/':
                 response = handle_root()
-            elif self.path == '/users':
+            elif path == '/users':
                 response = handle_users()
-            elif self.path == '/absences':
-                response = handle_absences()
+            elif path == '/absence-requests':
+                response = handle_absence_requests()
+            elif path == '/dashboard':
+                response = handle_dashboard()
             else:
-                response = handle_route_not_found(self.path)
+                response = handle_route_not_found(path)
                 
         except Exception as e:
             response = {
@@ -114,7 +315,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
             self.end_headers()
             
             if self.path == '/auth/login':
@@ -143,6 +344,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         self.end_headers()
         return 
