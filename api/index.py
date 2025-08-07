@@ -788,7 +788,8 @@ class handler(BaseHTTPRequestHandler):
                 if path == '/':
                     file_path = '/static/index.html'
                 elif path in ['/dashboard', '/dashboard/']:
-                    file_path = '/static/dashboard.html'
+                    # Servez la SPA principale pour /dashboard aussi
+                    file_path = '/static/index.html'
                 else:
                     # assets
                     file_path = path
