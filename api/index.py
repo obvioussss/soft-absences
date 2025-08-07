@@ -154,6 +154,11 @@ def serve_static_file(self, file_path):
         self.send_response(200)
         self.send_header('Content-type', mime_type)
         self.send_header('Access-Control-Allow-Origin', '*')
+        # CSP plus permissive pour éviter l'avertissement DevTools tout en restant raisonnable
+        self.send_header(
+            'Content-Security-Policy',
+            "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'"
+        )
         self.send_header('Cache-Control', 'public, max-age=3600')
         self.end_headers()
 
