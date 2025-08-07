@@ -38,6 +38,16 @@ except ImportError as e:
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+def json_serial(obj):
+    """Helper pour sérialiser les objets datetime en JSON"""
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    raise TypeError(f"Type {type(obj)} not serializable")
+
+def safe_json_dumps(obj):
+    """Sérialise un objet en JSON de manière sécurisée"""
+    return json.dumps(obj, default=json_serial, ensure_ascii=False)
+
 def create_access_token(data: dict):
     """Créer un token JWT simplifié"""
     try:
@@ -54,10 +64,10 @@ def create_access_token(data: dict):
             "sub": data.get("sub", ""),
             "user_id": data.get("user_id", ""),
             "role": data.get("role", ""),
-            "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            "exp": (datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).isoformat()
         }
         # Encoder en base64 simple
-        payload_str = json.dumps(payload)
+        payload_str = safe_json_dumps(payload)
         encoded = base64.b64encode(payload_str.encode()).decode()
         return f"token_{encoded}"
 
@@ -473,7 +483,7 @@ class handler(BaseHTTPRequestHandler):
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
                     response = {"error": "Fichier CSS non trouvé", "path": path}
-                    self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                    self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                     return
             
             # Gérer les routes API
@@ -494,7 +504,7 @@ class handler(BaseHTTPRequestHandler):
                 elif path == '/api/dashboard':
                     response = handle_dashboard()
                 
-                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                 return
             
             # Gérer les routes HTML et fichiers statiques
@@ -512,7 +522,7 @@ class handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 response = handle_route_not_found(path)
-                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                 return
             
             # Servir le fichier HTML/statique
@@ -527,7 +537,7 @@ class handler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
                 response = {"error": "Fichier non trouvé", "path": path, "mapped_path": file_path}
-                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                 return
                 
         except Exception as e:
@@ -541,7 +551,7 @@ class handler(BaseHTTPRequestHandler):
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+            self.wfile.write(safe_json_dumps(response).encode('utf-8'))
             return
 
     def do_POST(self):
@@ -579,7 +589,7 @@ class handler(BaseHTTPRequestHandler):
                 "message": str(e)
             }
         
-        self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+        self.wfile.write(safe_json_dumps(response).encode('utf-8'))
         return
 
     def do_OPTIONS(self):
