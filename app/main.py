@@ -27,6 +27,7 @@ def get_cors_origins():
         "http://127.0.0.1:3000", 
         "http://localhost:8080",
         "https://soft-abscences.vercel.app",
+        "https://soft-abscences-zeta.vercel.app",
         "https://soft-abscences-*.vercel.app",
         "https://*.vercel.app"
     ]
