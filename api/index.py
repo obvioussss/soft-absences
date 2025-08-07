@@ -86,20 +86,32 @@ def verify_token(token: str):
 def serve_static_file(self, file_path):
     """Sert un fichier statique"""
     try:
+        print(f"Tentative de servir le fichier: {file_path}")  # Debug
         result = handle_static_file(file_path)
         
         if not result:
+            print(f"Fichier statique non trouvé: {file_path}")
             return False
             
         mime_type = result["mime_type"]
         content = result["content"]
+        
+        print(f"Contenu trouvé, longueur: {len(content)}")  # Debug
         
         self.send_response(200)
         self.send_header('Content-type', mime_type)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cache-Control', 'public, max-age=3600')
         self.end_headers()
-        self.wfile.write(content.encode('utf-8'))
+        
+        # Encoder le contenu en UTF-8
+        if isinstance(content, str):
+            content_bytes = content.encode('utf-8')
+        else:
+            content_bytes = content
+            
+        self.wfile.write(content_bytes)
+        print(f"Fichier servi avec succès: {file_path}")  # Debug
         return True
         
     except Exception as e:
@@ -286,6 +298,7 @@ def handle_static_file(file_path):
         content = get_static_content(file_path)
         
         if not content:
+            print(f"Contenu non trouvé pour: {file_path}")
             return None
         
         return {
@@ -313,6 +326,8 @@ class handler(BaseHTTPRequestHandler):
             # Parser l'URL
             parsed_url = urlparse(self.path)
             path = parsed_url.path
+            
+            print(f"Requête reçue: {path}")  # Debug
             
             # Gérer les fichiers statiques CSS
             if path.endswith('.css'):
@@ -349,7 +364,8 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
                 return
             
-            # Gérer les routes HTML
+            # Gérer les routes HTML et fichiers statiques
+            file_path = None
             if path == '/':
                 file_path = '/static/index.html'
             elif path == '/dashboard':
@@ -367,18 +383,22 @@ class handler(BaseHTTPRequestHandler):
                 return
             
             # Servir le fichier HTML/statique
+            print(f"Tentative de servir: {file_path}")  # Debug
             if serve_static_file(self, file_path):
+                print(f"Fichier servi avec succès: {file_path}")  # Debug
                 return
             else:
+                print(f"Échec du service du fichier: {file_path}")  # Debug
                 self.send_response(404)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
-                response = {"error": "Fichier non trouvé", "path": path}
+                response = {"error": "Fichier non trouvé", "path": path, "mapped_path": file_path}
                 self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
                 return
                 
         except Exception as e:
+            print(f"Erreur dans do_GET: {e}")  # Debug
             response = {
                 "error": "Erreur serveur",
                 "message": str(e),
