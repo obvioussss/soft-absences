@@ -66,6 +66,13 @@ def init_db():
         INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
         VALUES ('admin@example.com', 'Admin', 'User', ?, 'ADMIN')
     ''', (test_password,))
+
+    # Admin local (pour correspondre à l'interface locale)
+    admin_local_password = hashlib.sha256("admin123".encode()).hexdigest()
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
+        VALUES ('hello.obvious@gmail.com', 'Admin', 'System', ?, 'ADMIN')
+    ''', (admin_local_password,))
     
     # Utilisateur test
     user_password = hashlib.sha256("password123".encode()).hexdigest()
