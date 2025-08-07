@@ -3,8 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soft Absences - Redirection</title>
+    <title>Soft Absences - Gestion des Absences</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -12,41 +19,192 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0;
         }
+
         .container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             padding: 40px;
-            text-align: center;
             max-width: 500px;
             width: 90%;
+            text-align: center;
         }
+
         .logo {
-            font-size: 3rem;
+            font-size: 2.5rem;
             margin-bottom: 20px;
+            color: #667eea;
         }
+
         h1 {
             color: #333;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            font-size: 2rem;
         }
-        .loading {
+
+        .subtitle {
             color: #666;
             margin-bottom: 30px;
+            font-size: 1.1rem;
         }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+
+        .status-card {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        .api-info {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .api-info h3 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .endpoints {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .endpoint {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .endpoint:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            color: #555;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .feature-list li:before {
+            content: "✅";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+        }
+
+        .login-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .login-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -54,17 +212,96 @@
     <div class="container">
         <div class="logo">🏢</div>
         <h1>Soft Absences</h1>
-        <div class="loading">
-            <div class="spinner"></div>
-            <p>Redirection en cours...</p>
+        <p class="subtitle">Gestion des absences et congés</p>
+        
+        <div class="status-card">
+            <h3>✅ Application Opérationnelle</h3>
+            <p>L'application est prête à être utilisée</p>
+        </div>
+
+        <div class="api-info">
+            <h3>🔗 API Endpoints</h3>
+            <div class="endpoints">
+                <a href="/health" class="endpoint">Health Check</a>
+                <a href="/users" class="endpoint">Utilisateurs</a>
+                <a href="/absences" class="endpoint">Absences</a>
+                <a href="/docs" class="endpoint">Documentation</a>
+            </div>
+        </div>
+
+        <div class="features">
+            <h3>✨ Fonctionnalités</h3>
+            <ul class="feature-list">
+                <li>Gestion des demandes d'absence</li>
+                <li>Validation par les administrateurs</li>
+                <li>Calendrier des absences</li>
+                <li>Notifications par email</li>
+                <li>Déclarations de maladie</li>
+                <li>Intégration Google Calendar</li>
+            </ul>
+        </div>
+
+        <div class="login-section">
+            <h3>🔐 Connexion</h3>
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required placeholder="admin@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" required placeholder="admin123">
+                </div>
+                <button type="submit" class="login-btn">Se connecter</button>
+            </form>
+            <div class="error-message" id="errorMessage"></div>
         </div>
     </div>
 
     <script>
-        // Redirection automatique vers la page principale
-        setTimeout(function() {
-            window.location.href = '/static/index.html';
-        }, 2000);
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('token', data.access_token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // Rediriger vers le dashboard
+                    window.location.href = '/static/dashboard.html';
+                } else {
+                    const errorData = await response.json();
+                    errorMessage.textContent = errorData.detail || 'Erreur de connexion';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                errorMessage.textContent = 'Erreur de connexion au serveur';
+                errorMessage.style.display = 'block';
+            }
+        });
+
+        // Vérifier si l'utilisateur est déjà connecté
+        const token = localStorage.getItem('token');
+        if (token) {
+            // Rediriger vers le dashboard si déjà connecté
+            window.location.href = '/static/dashboard.html';
+        }
     </script>
 </body>
 </html> 
