@@ -314,23 +314,9 @@ class handler(BaseHTTPRequestHandler):
             parsed_url = urlparse(self.path)
             path = parsed_url.path
             
-            # Gérer les fichiers statiques
-            if (path.startswith('/static/') or 
-                path.endswith('.css') or 
-                path.endswith('.html') or
-                path == '/' or
-                path == '/dashboard'):
-                
-                # Mapper les routes vers les fichiers statiques
-                if path == '/':
-                    file_path = '/static/index.html'
-                elif path == '/dashboard':
-                    file_path = '/static/dashboard.html'
-                elif path == '/style.css':
-                    file_path = '/static/style.css'
-                else:
-                    file_path = path
-                
+            # Gérer les fichiers statiques CSS
+            if path.endswith('.css'):
+                file_path = path
                 if serve_static_file(self, file_path):
                     return
                 else:
@@ -338,34 +324,59 @@ class handler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', 'application/json')
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
-                    response = {
-                        "error": "Fichier non trouvé",
-                        "path": path,
-                        "mapped_path": file_path
-                    }
+                    response = {"error": "Fichier CSS non trouvé", "path": path}
                     self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
                     return
             
             # Gérer les routes API
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            self.end_headers()
+            if path in ['/health', '/users', '/absence-requests', '/api/dashboard']:
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+                self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+                self.end_headers()
+                
+                if path == '/health':
+                    response = handle_health_check()
+                elif path == '/users':
+                    response = handle_users()
+                elif path == '/absence-requests':
+                    response = handle_absence_requests()
+                elif path == '/api/dashboard':
+                    response = handle_dashboard()
+                
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                return
             
-            if path == '/health':
-                response = handle_health_check()
-            elif path == '/':
-                response = handle_root()
-            elif path == '/users':
-                response = handle_users()
-            elif path == '/absence-requests':
-                response = handle_absence_requests()
+            # Gérer les routes HTML
+            if path == '/':
+                file_path = '/static/index.html'
             elif path == '/dashboard':
-                response = handle_dashboard()
+                file_path = '/static/dashboard.html'
+            elif path.startswith('/static/'):
+                file_path = path
             else:
+                # Route non trouvée
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
                 response = handle_route_not_found(path)
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                return
+            
+            # Servir le fichier HTML/statique
+            if serve_static_file(self, file_path):
+                return
+            else:
+                self.send_response(404)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                response = {"error": "Fichier non trouvé", "path": path}
+                self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+                return
                 
         except Exception as e:
             response = {
@@ -373,9 +384,12 @@ class handler(BaseHTTPRequestHandler):
                 "message": str(e),
                 "path": self.path
             }
-        
-        self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
-        return
+            self.send_response(500)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(response, ensure_ascii=False).encode('utf-8'))
+            return
 
     def do_POST(self):
         """Gérer les requêtes POST pour l'authentification"""

@@ -210,3 +210,4 @@ logs/
 # Test files
 test_*.db
 *_test.db
+.vercel
