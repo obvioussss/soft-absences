@@ -87,14 +87,147 @@ def serve_static_file(self, file_path):
     """Sert un fichier statique"""
     try:
         print(f"Tentative de servir le fichier: {file_path}")  # Debug
-        result = handle_static_file(file_path)
         
-        if not result:
-            print(f"Fichier statique non trouvé: {file_path}")
-            return False
+        # Contenu HTML embarqué directement
+        if file_path == '/static/index.html':
+            content = '''<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Absences</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        .header h1 { font-size: 2rem; font-weight: bold; color: #667eea; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; color: #333; font-weight: 500; }
+        input { width: 100%; padding: 0.75rem; border: 2px solid #e1e5e9; border-radius: 5px; font-size: 1rem; }
+        button { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 5px; font-size: 1rem; font-weight: 500; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Gestion des Absences</h1>
+        </div>
+        <div id="auth-section" class="auth-section">
+            <h2>Connexion</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email :</label>
+                    <input type="email" id="email" value="admin@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe :</label>
+                    <input type="password" id="password" value="password123" required>
+                </div>
+                <button type="submit" class="btn">Se connecter</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
             
-        mime_type = result["mime_type"]
-        content = result["content"]
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('Connexion réussie !');
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            } catch (error) {
+                alert('Erreur de connexion: ' + error);
+            }
+        });
+    </script>
+</body>
+</html>'''
+            mime_type = 'text/html'
+        elif file_path == '/static/dashboard.html':
+            content = '''<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestion des Absences</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { background: white; padding: 1rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #667eea; }
+        .stat-label { color: #666; margin-top: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Dashboard - Gestion des Absences</h1>
+            <p>Bienvenue dans votre espace de gestion</p>
+        </div>
+        <div id="stats" class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-absences">-</div>
+                <div class="stat-label">Total Absences</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="en-attente">-</div>
+                <div class="stat-label">En Attente</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="approuve">-</div>
+                <div class="stat-label">Approuvées</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="refuse">-</div>
+                <div class="stat-label">Refusées</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                if (data.statistics) {
+                    document.getElementById('total-absences').textContent = data.statistics.total_absences;
+                    document.getElementById('en-attente').textContent = data.statistics.en_attente;
+                    document.getElementById('approuve').textContent = data.statistics.approuve;
+                    document.getElementById('refuse').textContent = data.statistics.refuse;
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement du dashboard:', error);
+            }
+        }
+        
+        loadDashboard();
+    </script>
+</body>
+</html>'''
+            mime_type = 'text/html'
+        else:
+            # Essayer de récupérer via get_static_content
+            result = handle_static_file(file_path)
+            if not result:
+                print(f"Fichier statique non trouvé: {file_path}")
+                return False
+            content = result["content"]
+            mime_type = result["mime_type"]
         
         print(f"Contenu trouvé, longueur: {len(content)}")  # Debug
         
