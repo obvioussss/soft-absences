@@ -10,6 +10,9 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 if ENVIRONMENT == "test":
     DATABASE_URL = os.getenv("DATABASE_URL_TEST", "sqlite:///./test_absences.db")
+elif ENVIRONMENT == "production":
+    # En production sur Vercel, utiliser une base en mémoire
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:")
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./absences.db")
 

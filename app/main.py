@@ -19,21 +19,35 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Gestion des Absences", version="1.0.0")
 
-# Configuration CORS pour le développement
+# Configuration CORS pour le développement et la production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8080"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000", 
+        "http://localhost:8080",
+        "https://soft-abscences.vercel.app",
+        "https://soft-abscences-*.vercel.app",
+        "https://*.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Servir les fichiers statiques
-app.mount("/static", StaticFiles(directory="static"), name="static")
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception:
+    # En cas d'erreur, on continue sans les fichiers statiques
+    pass
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/static/index.html")
+    try:
+        return RedirectResponse(url="/static/index.html")
+    except:
+        return {"message": "Application de gestion des absences", "status": "running"}
 
 @app.get("/health")
 async def health_check():

@@ -102,9 +102,22 @@ async def read_sickness_declaration(
     if current_user.role != models.UserRole.ADMIN and db_declaration.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Accès non autorisé")
     
-    # Si c'est un admin qui consulte, marquer comme vue
+    # Si c'est un admin qui consulte, marquer comme vue et envoyer un email
     if current_user.role == models.UserRole.ADMIN and not db_declaration.viewed_by_admin:
         crud.mark_sickness_declaration_viewed(db, declaration_id)
+        
+        # Envoyer un email à l'utilisateur pour l'informer
+        user_name = f"{db_declaration.user.first_name} {db_declaration.user.last_name}"
+        admin_name = f"{current_user.first_name} {current_user.last_name}"
+        
+        email_service.send_sickness_declaration_viewed_notification(
+            user_email=db_declaration.user.email,
+            user_name=user_name,
+            start_date=str(db_declaration.start_date),
+            end_date=str(db_declaration.end_date),
+            admin_name=admin_name
+        )
+        
         db.refresh(db_declaration)
     
     return db_declaration
@@ -134,7 +147,19 @@ async def mark_declaration_as_viewed(
     # Marquer comme vue
     crud.mark_sickness_declaration_viewed(db, declaration_id)
     
-    return {"message": "Déclaration marquée comme vue"}
+    # Envoyer un email à l'utilisateur pour l'informer
+    user_name = f"{declaration.user.first_name} {declaration.user.last_name}"
+    admin_name = f"{current_user.first_name} {current_user.last_name}"
+    
+    email_service.send_sickness_declaration_viewed_notification(
+        user_email=declaration.user.email,
+        user_name=user_name,
+        start_date=str(declaration.start_date),
+        end_date=str(declaration.end_date),
+        admin_name=admin_name
+    )
+    
+    return {"message": "Déclaration marquée comme vue et email envoyé"}
 
 @router.post("/{declaration_id}/resend-email")
 async def resend_declaration_email(

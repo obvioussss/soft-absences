@@ -1,28 +1,48 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, field_validator
 from datetime import datetime, date
 from typing import Optional
+import re
 from app.models import UserRole, AbsenceType, AbsenceStatus
+
+# Fonction de validation d'email
+def validate_email(email: str) -> str:
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(pattern, email):
+        raise ValueError('Invalid email format')
+    return email
 
 # Schémas pour les utilisateurs
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str
     first_name: str
     last_name: str
     role: UserRole = UserRole.USER
     is_active: bool = True
     annual_leave_days: int = 25
 
+    @field_validator('email')
+    @classmethod
+    def validate_email_format(cls, v):
+        return validate_email(v)
+
 class UserCreate(UserBase):
     password: str
 
 class UserUpdate(BaseModel):
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
     password: Optional[str] = None
     annual_leave_days: Optional[int] = None
+
+    @field_validator('email')
+    @classmethod
+    def validate_email_format(cls, v):
+        if v is not None:
+            return validate_email(v)
+        return v
 
 class User(UserBase):
     id: int

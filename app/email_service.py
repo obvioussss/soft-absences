@@ -463,5 +463,39 @@ Système de gestion des absences
             print(f"Erreur lors de l'envoi de l'email avec pièce jointe via SMTP: {e}")
             return False
 
+    def send_sickness_declaration_viewed_notification(self, user_email: str, user_name: str, start_date: str, end_date: str, admin_name: str):
+        """Notifier l'utilisateur que son arrêt maladie a été marqué comme vu par l'admin"""
+        subject = f"Arrêt maladie consulté - {user_name}"
+        
+        body = f"""
+Bonjour {user_name},
+
+Votre arrêt maladie a été consulté par l'administrateur {admin_name} :
+
+Période : du {start_date} au {end_date}
+
+Votre déclaration a été marquée comme "vue" dans le système de gestion des absences.
+
+Cordialement,
+Système de gestion des absences
+        """
+        
+        html_body = f"""
+<html>
+<body>
+    <h2>Arrêt maladie consulté</h2>
+    <p>Bonjour {user_name},</p>
+    <p>Votre arrêt maladie a été consulté par l'administrateur <strong>{admin_name}</strong> :</p>
+    <ul>
+        <li><strong>Période :</strong> du {start_date} au {end_date}</li>
+    </ul>
+    <p>Votre déclaration a été marquée comme "vue" dans le système de gestion des absences.</p>
+    <p>Cordialement,<br>Système de gestion des absences</p>
+</body>
+</html>
+        """
+        
+        return self.send_email([user_email], subject, body, html_body)
+
 # Instance globale
 email_service = EmailService()
