@@ -647,7 +647,8 @@ def get_static_content(file_path):
     </header>
 
     <main class="main-content">
-        <div class="dashboard-grid">
+            <link href="https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+            <div class="dashboard-grid">
             <div class="card">
                 <h3>📊 Statistiques</h3>
                 <div class="stats-grid">

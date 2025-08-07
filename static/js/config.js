@@ -1,6 +1,6 @@
 // Configuration centralisée de l'application
 const CONFIG = {
-    API_BASE_URL: window.location.origin, // Utilise l'URL actuelle pour Vercel (soft-absences-zeta.vercel.app)
+    API_BASE_URL: window.location.origin,
     ALERT_TIMEOUT: 5000,
     DATE_FORMAT: 'fr-FR',
     DATE_INPUT_FORMAT: 'YYYY-MM-DD'
