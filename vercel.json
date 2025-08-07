@@ -1,12 +1,18 @@
 {
   "routes": [
     {
-      "src": "/dashboard",
-      "dest": "/api/index.py"
+      "src": "/static/(.*)",
+      "dest": "/api/index.py",
+      "headers": {
+        "x-vercel-original-path": "/static/$1"
+      }
     },
     {
-      "src": "/static/(.*)",
-      "dest": "/api/index.py"
+      "src": "/dashboard",
+      "dest": "/api/index.py",
+      "headers": {
+        "x-vercel-original-path": "/dashboard"
+      }
     },
     {
       "src": "/js/(.*)",

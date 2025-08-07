@@ -740,6 +740,36 @@ class handler(BaseHTTPRequestHandler):
             parsed_url = urlparse(self.path)
             path = parsed_url.path
 
+            # Récupérer le chemin original réécrit par Vercel (si présent)
+            original_candidates = [
+                self.headers.get('x-vercel-original-path'),
+                self.headers.get('x-original-uri'),
+                self.headers.get('x-forwarded-uri'),
+            ]
+            for cand in original_candidates:
+                if cand:
+                    try:
+                        path = urlparse(cand).path or path
+                        break
+                    except Exception:
+                        pass
+
+            # Support de x-now-route-matches (Vercel) pour extraire les groupes capturés
+            if path in ['/api/index.py', '/api/index']:
+                try:
+                    route_matches = self.headers.get('x-now-route-matches') or ''
+                    # Format typique: "1=static%2Findex.html&2=..."
+                    if route_matches:
+                        rm = {k: v[0] for k, v in parse_qs(route_matches).items()}
+                        if '1' in rm and rm['1']:
+                            # Si la route est /static/(.*) => reconstruire le chemin
+                            candidate = '/' + rm['1']
+                            candidate = candidate.replace('%2F', '/').replace('%2f', '/')
+                            if candidate.startswith('/'):
+                                path = candidate
+                except Exception:
+                    pass
+
             # Normaliser les trailing slashes ("/users/" -> "/users")
             if path != '/' and path.endswith('/'):
                 path = path[:-1]
