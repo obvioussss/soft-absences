@@ -187,7 +187,13 @@ def serve_static_file(self, file_path):
         # CSP plus permissive pour éviter l'avertissement DevTools tout en restant raisonnable
         self.send_header(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'"
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' data: https://fonts.gstatic.com; "
+            "img-src 'self' data:; "
+            "connect-src 'self'"
         )
         self.send_header('Cache-Control', 'public, max-age=3600')
         self.end_headers()
@@ -795,6 +801,7 @@ class handler(BaseHTTPRequestHandler):
                             return
                     self.send_response(404)
                     self.send_header('Content-type', 'application/json')
+                    self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'")
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
                     response = {"error": "Fichier non trouvé", "path": path, "mapped_path": file_path}
