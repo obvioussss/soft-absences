@@ -7,33 +7,63 @@ import hashlib
 from datetime import datetime, timedelta
 import base64
 import io
+import importlib.util
 
 # Ajouter le répertoire api au path pour les imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+def _import_by_path(module_name: str, filename: str):
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, os.path.join(current_dir, filename))
+        mod = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+        return mod
+    except Exception as e:
+        print(f"Import dynamique échoué pour {filename}: {e}")
+        return None
+
+# Import robustes des dépendances locales
+init_db = None
+verify_password = None
+hash_password = None
+get_static_content = None
+get_mime_type = None
 
 try:
-    from database import init_db, verify_password, hash_password
-    from static_files import get_static_content, get_mime_type
-except ImportError as e:
-    print(f"Erreur import: {e}")
-    # Fallback si les imports relatifs ne fonctionnent pas
-    try:
-        from .database import init_db, verify_password, hash_password
-        from .static_files import get_static_content, get_mime_type
-    except ImportError:
-        print("Impossible d'importer les modules")
-        # Définir des fonctions de fallback
-        def init_db():
-            return None
-        def verify_password(password, password_hash):
-            return password == "password123"
-        def hash_password(password):
-            return hashlib.sha256(password.encode()).hexdigest()
-        def get_static_content(file_path):
-            return None
-        def get_mime_type(file_path):
-            return "text/plain"
+    from database import init_db as _idb, verify_password as _vp, hash_password as _hp
+    from static_files import get_static_content as _gsc, get_mime_type as _gmt
+    init_db, verify_password, hash_password = _idb, _vp, _hp
+    get_static_content, get_mime_type = _gsc, _gmt
+except Exception as e:
+    print(f"Erreur import direct: {e}, tentative import dynamique…")
+    db_mod = _import_by_path("database", "database.py")
+    sf_mod = _import_by_path("static_files", "static_files.py")
+    if db_mod is not None:
+        init_db = getattr(db_mod, 'init_db', None)
+        verify_password = getattr(db_mod, 'verify_password', None)
+        hash_password = getattr(db_mod, 'hash_password', None)
+    if sf_mod is not None:
+        get_static_content = getattr(sf_mod, 'get_static_content', None)
+        get_mime_type = getattr(sf_mod, 'get_mime_type', None)
+
+if init_db is None:
+    def init_db():
+        return None
+if verify_password is None:
+    def verify_password(password, password_hash):
+        return password == "password123"
+if hash_password is None:
+    def hash_password(password):
+        return hashlib.sha256(password.encode()).hexdigest()
+if get_static_content is None:
+    def get_static_content(file_path):
+        return None
+if get_mime_type is None:
+    def get_mime_type(file_path):
+        return "text/plain"
 
 # Configuration JWT simplifiée
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
