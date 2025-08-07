@@ -711,9 +711,16 @@ class handler(BaseHTTPRequestHandler):
             
             print(f"Requête reçue: {path}")  # Debug
             
-            # Gérer les fichiers statiques CSS
-            if path.endswith('.css'):
-                file_path = path
+            # Priorité: routes statiques (/, /dashboard, /static/*, assets)
+            if path == '/' or path == '/dashboard' or path.startswith('/static/') or path.endswith('.css') or path.endswith('.js') or path.endswith('.ico'):
+                file_path = None
+                if path == '/':
+                    file_path = '/static/index.html'
+                elif path == '/dashboard':
+                    file_path = '/static/dashboard.html'
+                else:
+                    # assets
+                    file_path = path
                 if serve_static_file(self, file_path):
                     return
                 else:
@@ -721,7 +728,7 @@ class handler(BaseHTTPRequestHandler):
                     self.send_header('Content-type', 'application/json')
                     self.send_header('Access-Control-Allow-Origin', '*')
                     self.end_headers()
-                    response = {"error": "Fichier CSS non trouvé", "path": path}
+                    response = {"error": "Fichier non trouvé", "path": path, "mapped_path": file_path}
                     self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                     return
             
@@ -796,38 +803,7 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                 return
             
-            # Gérer les routes HTML et fichiers statiques
-            file_path = None
-            if path == '/':
-                file_path = '/static/index.html'
-            elif path == '/dashboard':
-                file_path = '/static/dashboard.html'
-            elif path.startswith('/static/'):
-                file_path = path
-            else:
-                # Route non trouvée
-                self.send_response(404)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                response = handle_route_not_found(path)
-                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
-                return
-            
-            # Servir le fichier HTML/statique
-            print(f"Tentative de servir: {file_path}")  # Debug
-            if serve_static_file(self, file_path):
-                print(f"Fichier servi avec succès: {file_path}")  # Debug
-                return
-            else:
-                print(f"Échec du service du fichier: {file_path}")  # Debug
-                self.send_response(404)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.end_headers()
-                response = {"error": "Fichier non trouvé", "path": path, "mapped_path": file_path}
-                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
-                return
+            # Si non statique: suite du traitement API
                 
         except Exception as e:
             print(f"Erreur dans do_GET: {e}")  # Debug
