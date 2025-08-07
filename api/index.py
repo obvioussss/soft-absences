@@ -131,8 +131,21 @@ def serve_static_file(self, file_path):
         # Récupérer via get_static_content généré depuis static/
         result = handle_static_file(file_path)
         if not result:
-            print(f"Fichier statique non trouvé: {file_path}")
-            return False
+            print(f"Fichier statique non trouvé via api/static_files.py: {file_path}, tentative de lecture disque...")
+            # Fallback: lecture directe depuis le répertoire static/ si présent dans le bundle
+            try:
+                rel_path = file_path.lstrip('/')
+                # Sécurité basique: forcer dans sous-dossier static
+                if not rel_path.startswith('static') and file_path != '/favicon.ico':
+                    return False
+                local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), rel_path) if rel_path.startswith('static') else os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'favicon.ico')
+                with open(local_path, 'rb') as f:
+                    content = f.read()
+                mime_type = get_mime_type(file_path)
+                result = {"content": content, "mime_type": mime_type}
+            except Exception as e:
+                print(f"Lecture disque échouée pour {file_path}: {e}")
+                return False
         content = result["content"]
         mime_type = result["mime_type"]
 
