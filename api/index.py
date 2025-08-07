@@ -740,6 +740,42 @@ def handle_route_not_found(path):
     }
 
 class handler(BaseHTTPRequestHandler):
+    def _respond_static_head(self, file_path: str) -> bool:
+        try:
+            result = handle_static_file(file_path)
+            if not result:
+                return False
+            mime_type = result["mime_type"]
+            self.send_response(200)
+            self.send_header('Content-type', mime_type)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'")
+            self.send_header('Cache-Control', 'public, max-age=3600')
+            self.end_headers()
+            return True
+        except Exception:
+            return False
+
+    def do_HEAD(self):
+        try:
+            parsed_url = urlparse(self.path)
+            path = parsed_url.path
+            if path == '/' or path in ['/dashboard', '/dashboard/'] or path.startswith('/static/') or path.endswith('.css') or path.endswith('.js') or path.endswith('.ico'):
+                if path == '/':
+                    file_path = '/static/index.html'
+                elif path in ['/dashboard', '/dashboard/']:
+                    file_path = '/static/index.html'
+                else:
+                    file_path = path
+                if self._respond_static_head(file_path):
+                    return
+            self.send_response(404)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+        except Exception:
+            self.send_response(500)
+            self.end_headers()
     def do_GET(self):
         try:
             # Parser l'URL
