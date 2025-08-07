@@ -20,16 +20,27 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Gestion des Absences", version="1.0.0")
 
 # Configuration CORS pour le développement et la production
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+def get_cors_origins():
+    """Récupère les origines CORS depuis les variables d'environnement"""
+    default_origins = [
         "http://localhost:3000", 
         "http://127.0.0.1:3000", 
         "http://localhost:8080",
         "https://soft-abscences.vercel.app",
         "https://soft-abscences-*.vercel.app",
         "https://*.vercel.app"
-    ],
+    ]
+    
+    # Ajouter les origines depuis les variables d'environnement
+    env_origins = os.getenv("CORS_ORIGINS", "").split(",")
+    if env_origins and env_origins[0]:
+        default_origins.extend([origin.strip() for origin in env_origins])
+    
+    return default_origins
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
