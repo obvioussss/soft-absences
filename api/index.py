@@ -747,11 +747,11 @@ class handler(BaseHTTPRequestHandler):
             print(f"Requête reçue: {path}")  # Debug
             
             # Priorité: routes statiques (/, /dashboard, /static/*, assets)
-            if path == '/' or path == '/dashboard' or path.startswith('/static/') or path.endswith('.css') or path.endswith('.js') or path.endswith('.ico'):
+            if path == '/' or path in ['/dashboard', '/dashboard/'] or path.startswith('/static/') or path.endswith('.css') or path.endswith('.js') or path.endswith('.ico'):
                 file_path = None
                 if path == '/':
                     file_path = '/static/index.html'
-                elif path == '/dashboard':
+                elif path in ['/dashboard', '/dashboard/']:
                     file_path = '/static/dashboard.html'
                 else:
                     # assets
@@ -759,6 +759,10 @@ class handler(BaseHTTPRequestHandler):
                 if serve_static_file(self, file_path):
                     return
                 else:
+                    # Fallback: si dashboard indisponible, servir l'index
+                    if file_path == '/static/dashboard.html':
+                        if serve_static_file(self, '/static/index.html'):
+                            return
                     self.send_response(404)
                     self.send_header('Content-type', 'application/json')
                     self.send_header('Access-Control-Allow-Origin', '*')
