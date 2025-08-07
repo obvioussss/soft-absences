@@ -714,7 +714,7 @@ class handler(BaseHTTPRequestHandler):
             
             # Gérer les routes API principales + motifs dynamiques
             if (
-                path in ['/health', '/users', '/absence-requests', '/api/dashboard', '/dashboard', '/users/me', '/absence-requests/all', '/calendar/admin', '/calendar/user', '/calendar/summary', '/sickness-declarations']
+                path in ['/health', '/users', '/absence-requests', '/api/dashboard', '/users/me', '/absence-requests/all', '/calendar/admin', '/calendar/user', '/calendar/summary', '/sickness-declarations']
                 or path.startswith('/users/')
                 or path.startswith('/sickness-declarations/')
                 or path.startswith('/absence-requests/')
@@ -736,7 +736,7 @@ class handler(BaseHTTPRequestHandler):
                 elif path == '/absence-requests/all':
                     # Pour compat avec le frontend, retourner la même liste
                     response = handle_absence_requests(None)
-                elif path == '/api/dashboard' or path == '/dashboard':
+                elif path == '/api/dashboard':
                     current_user = get_user_from_auth_header(self.headers)
                     response = handle_dashboard(current_user)
                 elif path == '/users/me':

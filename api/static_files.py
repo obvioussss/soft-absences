@@ -8,6 +8,11 @@ def get_mime_type(file_path):
 def get_static_content(file_path):
     """Retourne le contenu des fichiers statiques embarqués"""
     static_files = {
+        '/favicon.ico': {
+            'content': ''
+            ,
+            'mime_type': 'image/x-icon'
+        },
         '/static/index.html': {
             'content': '''<!DOCTYPE html>
 <html lang="fr">
