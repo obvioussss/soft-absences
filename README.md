@@ -50,7 +50,81 @@ Application web complète pour la gestion des absences et congés avec intégrat
 - **Authentification** : JWT
 - **Emails** : SMTP/Resend
 - **Calendrier** : Google Calendar API
-- **Déploiement** : Vercel/Netlify
+- **Déploiement** : Vercel
+
+## 📁 Structure du projet
+
+```
+soft_abscences/
+├── app/                    # Application FastAPI
+│   ├── crud/              # Opérations base de données
+│   │   ├── __init__.py
+│   │   ├── absences.py
+│   │   ├── calculations.py
+│   │   ├── sickness.py
+│   │   └── users.py
+│   ├── routes/            # Routes API
+│   │   ├── __init__.py
+│   │   ├── absence_requests.py
+│   │   ├── auth.py
+│   │   ├── calendar.py
+│   │   ├── dashboard.py
+│   │   ├── google_calendar.py
+│   │   ├── sickness_declarations.py
+│   │   └── users.py
+│   ├── __init__.py
+│   ├── auth.py            # Authentification JWT
+│   ├── database.py        # Configuration base de données
+│   ├── email_service.py   # Service d'envoi d'emails
+│   ├── file_service.py    # Gestion des fichiers
+│   ├── google_calendar_service.py  # Intégration Google Calendar
+│   ├── main.py           # Point d'entrée FastAPI
+│   ├── models.py         # Modèles SQLAlchemy
+│   └── schemas.py        # Schémas Pydantic
+├── api/                   # API pour Vercel
+│   ├── database.py       # Base de données en mémoire
+│   ├── handlers.py       # Gestionnaires de requêtes
+│   ├── index.py          # Point d'entrée Vercel
+│   └── static_files.py   # Fichiers statiques embarqués
+├── static/               # Frontend
+│   ├── css/
+│   │   └── styles.css
+│   ├── js/
+│   │   ├── admin.js
+│   │   ├── auth.js
+│   │   ├── calendar.js
+│   │   ├── config.js
+│   │   ├── dashboard.js
+│   │   ├── main.js
+│   │   ├── sickness.js
+│   │   └── utils.js
+│   ├── dashboard.html
+│   ├── index.html
+│   └── style.css
+├── tests/                # Tests unitaires
+│   ├── __init__.py
+│   ├── conftest.py
+│   ├── test_absence_requests.py
+│   ├── test_auth.py
+│   ├── test_calculations.py
+│   ├── test_sickness_declarations.py
+│   └── test_users.py
+├── alembic/              # Migrations base de données
+│   ├── versions/
+│   ├── env.py
+│   └── script.py.mako
+├── uploads/              # Fichiers uploadés
+│   └── sickness_declarations/
+├── .cursor/              # Configuration Cursor
+├── .gitignore           # Fichiers ignorés par Git
+├── alembic.ini          # Configuration Alembic
+├── create_admin.py      # Script de création d'admin
+├── pytest.ini          # Configuration pytest
+├── README.md           # Documentation
+├── requirements.txt    # Dépendances Python
+├── run_dev.py         # Script de développement
+└── vercel.json        # Configuration Vercel
+```
 
 ## 🚀 Installation
 
@@ -94,25 +168,6 @@ python run_dev.py
 
 L'application sera accessible sur `http://localhost:8000`
 
-## 📁 Structure du projet
-
-```
-soft_abscences/
-├── app/                    # Application FastAPI
-│   ├── crud/              # Opérations base de données
-│   ├── routes/            # Routes API
-│   ├── models.py          # Modèles SQLAlchemy
-│   ├── schemas.py         # Schémas Pydantic
-│   └── main.py           # Point d'entrée
-├── static/                # Frontend
-│   ├── css/              # Styles
-│   ├── js/               # JavaScript modulaire
-│   └── templates/        # Templates HTML
-├── tests/                # Tests unitaires
-├── alembic/              # Migrations base de données
-└── uploads/              # Fichiers uploadés
-```
-
 ## 🔧 Configuration
 
 ### Variables d'environnement
@@ -137,84 +192,53 @@ EMAIL_FROM=votre-email@gmail.com
 RESEND_API_KEY=votre-clé-resend
 RESEND_FROM_EMAIL=noreply@votre-domaine.com
 
-# Google Calendar (optionnel)
+# Google Calendar
 GOOGLE_CALENDAR_CREDENTIALS={"type":"service_account",...}
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,https://votre-domaine.com
 ```
-
-### Configuration Google Calendar
-
-1. Créer un projet Google Cloud
-2. Activer l'API Google Calendar
-3. Créer un service account
-4. Télécharger le fichier JSON des credentials
-5. Ajouter la variable `GOOGLE_CALENDAR_CREDENTIALS` dans `.env`
 
 ## 🧪 Tests
 
 ```bash
 # Lancer tous les tests
-pytest
+pytest tests/ -v
 
-# Tests avec couverture
-pytest --cov=app
-
-# Tests spécifiques
-pytest tests/test_auth.py
+# Lancer les tests avec couverture
+pytest tests/ --cov=app --cov-report=html
 ```
 
-## 🚀 Déploiement
+## 🌐 Déploiement
 
-### Vercel (recommandé)
+### Vercel
+1. Connectez votre repo GitHub à Vercel
+2. Vercel détectera automatiquement la configuration
+3. Configurez les variables d'environnement dans Vercel
+4. Déployez !
 
-1. Connecter le repository GitHub à Vercel
-2. Configurer les variables d'environnement
-3. Déployer automatiquement
+## 📊 Fonctionnalités principales
 
-### Netlify
-
-1. Connecter le repository GitHub à Netlify
-2. Configurer le build command
-3. Déployer
-
-## 📊 Fonctionnalités avancées
-
-### Calcul des congés
-- Calcul automatique des jours ouvrés
-- Gestion des congés annuels
-- Historique des utilisations
-
-### Interface d'administration
-- Dashboard avec statistiques
-- Gestion complète des utilisateurs
-- Administration Google Calendar
-- Gestion des déclarations de maladie
-
-### Sécurité
-- Authentification JWT
-- Validation des données
-- Protection CSRF
-- Gestion des permissions
+- ✅ **Authentification complète** avec JWT
+- ✅ **Gestion des utilisateurs** (CRUD)
+- ✅ **Demandes d'absence** avec workflow d'approbation
+- ✅ **Calendrier interactif** des absences
+- ✅ **Intégration Google Calendar** automatique
+- ✅ **Notifications email** (SMTP/Resend)
+- ✅ **Déclarations de maladie** avec upload PDF
+- ✅ **Interface web** complète et responsive
+- ✅ **Tests automatisés** complets
+- ✅ **API REST** documentée
+- ✅ **Migrations de base de données** avec Alembic
 
 ## 🤝 Contribution
 
 1. Fork le projet
-2. Créer une branche feature
-3. Commiter les changements
-4. Pousser vers la branche
-5. Ouvrir une Pull Request
+2. Créez une branche pour votre fonctionnalité
+3. Committez vos changements
+4. Poussez vers la branche
+5. Ouvrez une Pull Request
 
-## 📝 Licence
+## 📄 Licence
 
-Ce projet est sous licence MIT.
-
-## 🔄 Historique des versions
-
-### v1.0.0
-- ✅ Refactoring complet du code
-- ✅ Suppression des doublons
-- ✅ Configuration centralisée
-- ✅ Nettoyage des scripts obsolètes
-- ✅ Documentation mise à jour
-- ✅ Tests unitaires complets
-- ✅ Intégration Google Calendar
-- ✅ Gestion des déclarations de maladie
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
