@@ -195,7 +195,11 @@ def serve_static_file(self, file_path):
             "img-src 'self' data:; "
             "connect-src 'self'"
         )
-        self.send_header('Cache-Control', 'public, max-age=3600')
+        # Éviter le cache agressif pour le HTML afin d'éviter des 404 mises en cache par le CDN
+        if str(mime_type).startswith('text/html'):
+            self.send_header('Cache-Control', 'no-store, max-age=0')
+        else:
+            self.send_header('Cache-Control', 'public, max-age=3600')
         self.end_headers()
 
         # Encoder le contenu en UTF-8
