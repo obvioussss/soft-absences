@@ -1,8 +1,3 @@
-// Configuration de l'API
-const API_BASE_URL = 'http://localhost:8000';
-let currentUser = null;
-let authToken = null;
-
 // Utilitaires d'affichage
 function showAlert(message, type = 'success') {
     const alertDiv = document.createElement('div');
@@ -14,12 +9,12 @@ function showAlert(message, type = 'success') {
     
     setTimeout(() => {
         alertDiv.remove();
-    }, 5000);
+    }, CONFIG.ALERT_TIMEOUT);
 }
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR');
+    return date.toLocaleDateString(CONFIG.DATE_FORMAT);
 }
 
 function formatDateForInput(dateString) {
@@ -100,7 +95,7 @@ function showSubTab(subTabName) {
 
 // API Calls
 async function apiCall(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${CONFIG.API_BASE_URL}${endpoint}`;
     const config = {
         headers: {
             'Content-Type': 'application/json',

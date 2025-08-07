@@ -1,188 +1,220 @@
-# 🏢 Logiciel de Gestion des Absences
+# 🏢 Gestion des Absences
 
-Un système simple et efficace pour gérer les absences des employés avec deux types de comptes (admin et utilisateur).
+Application web complète pour la gestion des absences et congés avec intégration Google Calendar.
 
 ## ✨ Fonctionnalités
 
-### Pour les utilisateurs :
-- 📝 Demander des congés (vacances, maladie, télétravail, congés sans solde)
-- 👀 Voir ses demandes et leur statut
-- ✏️ Modifier ses demandes en attente
-- 🗑️ Supprimer ses demandes
+### 🔐 Authentification
+- Connexion sécurisée avec JWT
+- Rôles utilisateur et administrateur
+- Gestion des sessions
 
-### Pour les administrateurs :
-- ✅ Approuver ou refuser les demandes d'absence
-- 👥 Gérer les utilisateurs (créer, modifier, supprimer)
-- 📊 Voir toutes les demandes d'absence
-- 📅 Calendrier des absences approuvées
-- 📧 Notifications email automatiques
+### 📋 Gestion des absences
+- Demande d'absence (vacances/maladie)
+- Approbation/rejet par les administrateurs
+- Historique complet des demandes
+- Calcul automatique des jours de congés
 
-## 🛠️ Technologies utilisées
+### 📅 Calendrier intégré
+- Vue calendrier interactive
+- Affichage des absences approuvées
+- Vue mensuelle pour les administrateurs
+- Vue annuelle pour les utilisateurs
 
-- **Backend** : Python 3.9+ avec FastAPI
-- **Frontend** : HTML5, CSS3, JavaScript (vanilla)
-- **Base de données** : SQLite (développement), PostgreSQL (production)
-- **Authentification** : JWT avec bcrypt
-- **Tests** : pytest
-- **Déploiement** : Vercel
+### 🔗 Intégration Google Calendar
+- Synchronisation automatique des absences approuvées
+- Création/mise à jour/suppression d'événements
+- Interface d'administration dédiée
+- Couleurs distinctives (bleu pour vacances, rouge pour maladie)
 
-## 🚀 Installation et utilisation
+### 📧 Notifications par email
+- Notifications automatiques aux administrateurs
+- Support SMTP et Resend
+- Emails de confirmation
+
+### 📄 Déclarations de maladie
+- Upload de certificats médicaux (PDF)
+- Gestion des déclarations par les administrateurs
+- Notifications par email
+
+### 👥 Gestion des utilisateurs
+- Création/modification/suppression d'utilisateurs
+- Attribution de rôles
+- Gestion des congés annuels
+
+## 🛠️ Technologies
+
+- **Backend** : Python FastAPI
+- **Base de données** : SQLite avec SQLAlchemy
+- **Frontend** : HTML/CSS/JavaScript vanilla
+- **Authentification** : JWT
+- **Emails** : SMTP/Resend
+- **Calendrier** : Google Calendar API
+- **Déploiement** : Vercel/Netlify
+
+## 🚀 Installation
 
 ### Prérequis
-- Python 3.9 ou supérieur
-- pip (gestionnaire de paquets Python)
+- Python 3.8+
+- Git
 
-### Installation
+### Installation locale
 
-1. **Cloner le projet**
-   ```bash
-   git clone <votre-repo>
-   cd soft_abscences
-   ```
+1. **Cloner le repository**
+```bash
+git clone <repository-url>
+cd soft_abscences
+```
 
 2. **Installer les dépendances**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Lancer le serveur de développement**
-   ```bash
-   python run_dev.py
-   ```
-
-   Le script va :
-   - Créer automatiquement le fichier `.env`
-   - Initialiser la base de données
-   - Créer un compte administrateur par défaut
-   - Lancer le serveur sur http://localhost:8000
-
-### Compte administrateur par défaut
-
-- **Email** : `admin@example.com`
-- **Mot de passe** : `admin123`
-
-⚠️ **Changez ce mot de passe après la première connexion !**
-
-## 📱 Accès à l'application
-
-- **API** : http://localhost:8000
-- **Interface web** : http://localhost:8000/static/index.html
-- **Documentation API** : http://localhost:8000/docs
-- **Monitoring** : http://localhost:8000/redoc
-
-## 🧪 Tests
-
-Lancer tous les tests :
 ```bash
-pytest
+pip install -r requirements.txt
 ```
 
-Lancer les tests avec couverture :
+3. **Configurer l'environnement**
 ```bash
-pytest --cov=app
+cp .env.example .env
+# Éditer .env avec vos configurations
 ```
 
-## 📧 Configuration email (optionnel)
-
-Pour activer les notifications email, modifiez le fichier `.env` :
-
-```env
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=votre-email@gmail.com
-SMTP_PASSWORD=votre-mot-de-passe-app
-EMAIL_FROM=votre-email@gmail.com
+4. **Initialiser la base de données**
+```bash
+python -m alembic upgrade head
 ```
 
-Pour Gmail, utilisez un mot de passe d'application (App Password).
+5. **Créer un utilisateur administrateur**
+```bash
+python create_admin.py
+```
 
-## 🗃️ Structure du projet
+6. **Lancer l'application**
+```bash
+python run_dev.py
+```
+
+L'application sera accessible sur `http://localhost:8000`
+
+## 📁 Structure du projet
 
 ```
 soft_abscences/
-├── app/                    # Code de l'application
-│   ├── main.py            # Point d'entrée FastAPI
-│   ├── models.py          # Modèles de base de données
+├── app/                    # Application FastAPI
+│   ├── crud/              # Opérations base de données
+│   ├── routes/            # Routes API
+│   ├── models.py          # Modèles SQLAlchemy
 │   ├── schemas.py         # Schémas Pydantic
-│   ├── crud.py            # Opérations CRUD
-│   ├── auth.py            # Authentification
-│   ├── database.py        # Configuration DB
-│   └── email_service.py   # Service d'email
-├── static/                 # Interface web
-│   ├── index.html         # Page principale
-│   └── app.js             # Logique frontend
-├── tests/                  # Tests
-├── create_admin.py         # Script création admin
-├── run_dev.py             # Script de développement
-├── requirements.txt       # Dépendances Python
-└── README.md              # Documentation
+│   └── main.py           # Point d'entrée
+├── static/                # Frontend
+│   ├── css/              # Styles
+│   ├── js/               # JavaScript modulaire
+│   └── templates/        # Templates HTML
+├── tests/                # Tests unitaires
+├── alembic/              # Migrations base de données
+└── uploads/              # Fichiers uploadés
 ```
 
-## 📊 API Endpoints
+## 🔧 Configuration
 
-### Authentification
-- `POST /token` - Connexion
-- `GET /users/me` - Profil utilisateur connecté
+### Variables d'environnement
 
-### Utilisateurs (Admin uniquement)
-- `GET /users/` - Liste des utilisateurs
-- `POST /users/` - Créer un utilisateur
-- `GET /users/{id}` - Détails d'un utilisateur
-- `PUT /users/{id}` - Modifier un utilisateur
-- `DELETE /users/{id}` - Supprimer un utilisateur
+```env
+# Base de données
+DATABASE_URL=sqlite:///./absences.db
 
-### Demandes d'absence
-- `GET /absence-requests/` - Mes demandes (utilisateur) / Toutes (admin)
-- `POST /absence-requests/` - Créer une demande
-- `GET /absence-requests/{id}` - Détails d'une demande
-- `PUT /absence-requests/{id}` - Modifier une demande
-- `PUT /absence-requests/{id}/status` - Changer le statut (admin)
-- `DELETE /absence-requests/{id}` - Supprimer une demande
+# JWT
+SECRET_KEY=votre-clé-secrète
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
 
-### Calendrier
-- `GET /calendar/events` - Événements du calendrier
+# Email (SMTP ou Resend)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=votre-email@gmail.com
+SMTP_PASSWORD=votre-mot-de-passe
+EMAIL_FROM=votre-email@gmail.com
 
-## 🚢 Déploiement
+# Ou pour Resend
+RESEND_API_KEY=votre-clé-resend
+RESEND_FROM_EMAIL=noreply@votre-domaine.com
 
-### Déploiement local pour production
+# Google Calendar (optionnel)
+GOOGLE_CALENDAR_CREDENTIALS={"type":"service_account",...}
+```
 
-1. Créer un fichier `.env` de production
-2. Configurer une base de données PostgreSQL
-3. Lancer avec gunicorn :
-   ```bash
-   gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
-   ```
+### Configuration Google Calendar
 
-### Déploiement sur Vercel
+1. Créer un projet Google Cloud
+2. Activer l'API Google Calendar
+3. Créer un service account
+4. Télécharger le fichier JSON des credentials
+5. Ajouter la variable `GOOGLE_CALENDAR_CREDENTIALS` dans `.env`
 
-Le projet est configuré pour être déployé sur Vercel. Un fichier `vercel.json` est fourni.
+## 🧪 Tests
 
-## 🐛 Dépannage
+```bash
+# Lancer tous les tests
+pytest
 
-### Problèmes courants
+# Tests avec couverture
+pytest --cov=app
 
-1. **Erreur de base de données**
-   - Supprimez le fichier `absences.db` et relancez `python run_dev.py`
+# Tests spécifiques
+pytest tests/test_auth.py
+```
 
-2. **Erreur d'import**
-   - Vérifiez que vous êtes dans le bon répertoire
-   - Réinstallez les dépendances : `pip install -r requirements.txt`
+## 🚀 Déploiement
 
-3. **Erreur de port occupé**
-   - Changez le port dans `run_dev.py` ou tuez le processus qui utilise le port 8000
+### Vercel (recommandé)
+
+1. Connecter le repository GitHub à Vercel
+2. Configurer les variables d'environnement
+3. Déployer automatiquement
+
+### Netlify
+
+1. Connecter le repository GitHub à Netlify
+2. Configurer le build command
+3. Déployer
+
+## 📊 Fonctionnalités avancées
+
+### Calcul des congés
+- Calcul automatique des jours ouvrés
+- Gestion des congés annuels
+- Historique des utilisations
+
+### Interface d'administration
+- Dashboard avec statistiques
+- Gestion complète des utilisateurs
+- Administration Google Calendar
+- Gestion des déclarations de maladie
+
+### Sécurité
+- Authentification JWT
+- Validation des données
+- Protection CSRF
+- Gestion des permissions
 
 ## 🤝 Contribution
 
 1. Fork le projet
-2. Créez une branche pour votre fonctionnalité
-3. Committez vos changements
-4. Poussez vers la branche
-5. Ouvrez une Pull Request
+2. Créer une branche feature
+3. Commiter les changements
+4. Pousser vers la branche
+5. Ouvrir une Pull Request
 
 ## 📝 Licence
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+Ce projet est sous licence MIT.
 
-## 📞 Support
+## 🔄 Historique des versions
 
-Pour toute question ou problème, ouvrez une issue sur GitHub.
+### v1.0.0
+- ✅ Refactoring complet du code
+- ✅ Suppression des doublons
+- ✅ Configuration centralisée
+- ✅ Nettoyage des scripts obsolètes
+- ✅ Documentation mise à jour
+- ✅ Tests unitaires complets
+- ✅ Intégration Google Calendar
+- ✅ Gestion des déclarations de maladie
