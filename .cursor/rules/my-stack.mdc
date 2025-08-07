@@ -1,0 +1,17 @@
+md
+Description: This is the project's tech stack
+Auto Attach: *.tsx, src/config/**/*.json, *Test.cpp, ...
+
+# Technical stack
+
+- Python for the backend
+- html/js for the frontend
+- SQL databases, never JSON file storage
+- Separated databases for dev, test, and prod
+- Elasticsearch for search, using elastic.co hosting
+- Elastic.co will have dev and prod indexes
+- Python tests
+description:
+globs:
+alwaysApply: false
+---

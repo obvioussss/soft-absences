@@ -1,0 +1,208 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app import models, schemas, crud, auth
+from app.email_service import email_service
+
+router = APIRouter()
+
+@router.get("/", response_model=list[schemas.AbsenceRequest])
+async def read_absence_requests(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: models.User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role == models.UserRole.ADMIN:
+        requests = crud.get_absence_requests(db, skip=skip, limit=limit)
+    else:
+        requests = crud.get_absence_requests(db, skip=skip, limit=limit, user_id=current_user.id)
+    return requests
+
+@router.get("/all", response_model=list[schemas.AbsenceRequest])
+async def read_all_absence_requests(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    requests = crud.get_absence_requests(db, skip=skip, limit=limit)
+    return requests
+
+@router.post("/", response_model=schemas.AbsenceRequest)
+async def create_absence_request(
+    request: schemas.AbsenceRequestCreate,
+    current_user: models.User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    # Seuls les utilisateurs normaux peuvent créer des demandes d'absence
+    if current_user.role == models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Les administrateurs ne peuvent pas créer de demandes d'absence")
+    
+    db_request = crud.create_absence_request(db=db, request=request, user_id=current_user.id)
+    
+    # Notifier les admins par email
+    admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+    admin_emails = [admin.email for admin in admin_users]
+    
+    user_name = f"{current_user.first_name} {current_user.last_name}"
+    email_service.send_absence_request_notification(
+        admin_emails=admin_emails,
+        user_name=user_name,
+        absence_type=request.type.value,
+        start_date=str(request.start_date),
+        end_date=str(request.end_date),
+        reason=request.reason
+    )
+    
+    return db_request
+
+@router.get("/{request_id}", response_model=schemas.AbsenceRequest)
+async def read_absence_request(
+    request_id: int,
+    current_user: models.User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Vérifier que l'utilisateur peut accéder à cette demande
+    if current_user.role != models.UserRole.ADMIN and db_request.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    return db_request
+
+@router.put("/{request_id}", response_model=schemas.AbsenceRequest)
+async def update_absence_request(
+    request_id: int,
+    request_update: schemas.AbsenceRequestUpdate,
+    current_user: models.User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Seuls les utilisateurs normaux peuvent modifier leurs demandes
+    if current_user.role == models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Les administrateurs ne peuvent pas modifier les demandes d'absence")
+    
+    # Seul le propriétaire peut modifier sa demande (et seulement si en attente)
+    if db_request.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    if db_request.status != models.AbsenceStatus.EN_ATTENTE:
+        raise HTTPException(status_code=400, detail="Impossible de modifier une demande déjà traitée")
+    
+    updated_request = crud.update_absence_request(db=db, request_id=request_id, request_update=request_update)
+    
+    # Notifier les admins de la modification
+    admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+    admin_emails = [admin.email for admin in admin_users]
+    
+    user_name = f"{current_user.first_name} {current_user.last_name}"
+    email_service.send_absence_modification_notification(
+        admin_emails=admin_emails,
+        user_name=user_name,
+        absence_type=updated_request.type.value,
+        start_date=str(updated_request.start_date),
+        end_date=str(updated_request.end_date),
+        reason=updated_request.reason,
+        request_id=request_id
+    )
+    
+    return updated_request
+
+@router.put("/{request_id}/status", response_model=schemas.AbsenceRequest)
+async def update_absence_request_status(
+    request_id: int,
+    admin_update: schemas.AbsenceRequestAdmin,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    updated_request = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
+    
+    # Notifier l'utilisateur par email
+    user_name = f"{db_request.user.first_name} {db_request.user.last_name}"
+    email_service.send_absence_status_notification(
+        user_email=db_request.user.email,
+        user_name=user_name,
+        absence_type=db_request.type.value,
+        status=admin_update.status.value,
+        admin_comment=admin_update.admin_comment
+    )
+    
+    return updated_request
+
+@router.delete("/{request_id}")
+async def delete_absence_request(
+    request_id: int,
+    current_user: models.User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Seuls les utilisateurs normaux peuvent supprimer leurs propres demandes
+    if current_user.role == models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Les administrateurs ne peuvent pas supprimer les demandes d'absence")
+    
+    # Seul le propriétaire peut supprimer sa demande
+    if db_request.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    # Notifier les admins de la suppression avant de supprimer la demande
+    admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+    admin_emails = [admin.email for admin in admin_users]
+    
+    user_name = f"{current_user.first_name} {current_user.last_name}"
+    email_service.send_absence_deletion_notification(
+        admin_emails=admin_emails,
+        user_name=user_name,
+        absence_type=db_request.type.value,
+        start_date=str(db_request.start_date),
+        end_date=str(db_request.end_date),
+        reason=db_request.reason,
+        request_id=request_id
+    )
+    
+    crud.delete_absence_request(db=db, request_id=request_id)
+    return {"message": "Demande supprimée"}
+
+@router.post("/admin", response_model=schemas.AbsenceRequest)
+async def create_admin_absence(
+    request: schemas.AdminAbsenceCreate,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Créer une absence pour un utilisateur (admin uniquement)"""
+    # Vérifier que l'utilisateur cible existe
+    target_user = crud.get_user(db, user_id=request.user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    db_request = crud.create_admin_absence(db=db, request=request, admin_id=current_user.id)
+    
+    # Notifier l'utilisateur par email
+    user_name = f"{target_user.first_name} {target_user.last_name}"
+    admin_name = f"{current_user.first_name} {current_user.last_name}"
+    email_service.send_admin_absence_notification(
+        user_email=target_user.email,
+        user_name=user_name,
+        admin_name=admin_name,
+        absence_type=request.type.value,
+        start_date=str(request.start_date),
+        end_date=str(request.end_date),
+        reason=request.reason,
+        admin_comment=request.admin_comment
+    )
+    
+    return db_request
+

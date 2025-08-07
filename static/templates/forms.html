@@ -1,0 +1,59 @@
+<!-- Formulaire de nouvelle demande d'absence -->
+<div id="new-request-form" style="display: none; margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+    <h3>Nouvelle demande d'absence</h3>
+    <form id="absence-form">
+        <div class="form-group">
+            <label for="absence-type">Type d'absence :</label>
+            <select id="absence-type" required>
+                <option value="vacances">Vacances</option>
+                <option value="maladie">Maladie</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="start-date">Date de début :</label>
+            <input type="date" id="start-date" required>
+        </div>
+        <div class="form-group">
+            <label for="end-date">Date de fin :</label>
+            <input type="date" id="end-date" required>
+        </div>
+        <div class="form-group">
+            <label for="reason">Raison (optionnel) :</label>
+            <textarea id="reason" placeholder="Motif de la demande..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Soumettre</button>
+        <button type="button" class="btn" onclick="hideNewRequestForm()">Annuler</button>
+    </form>
+</div>
+
+<!-- Formulaire de nouvel utilisateur -->
+<div id="new-user-form" style="display: none; margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+    <h3>Nouvel utilisateur</h3>
+    <form id="user-form">
+        <div class="form-group">
+            <label for="user-email">Email :</label>
+            <input type="email" id="user-email" required>
+        </div>
+        <div class="form-group">
+            <label for="user-first-name">Prénom :</label>
+            <input type="text" id="user-first-name" required>
+        </div>
+        <div class="form-group">
+            <label for="user-last-name">Nom :</label>
+            <input type="text" id="user-last-name" required>
+        </div>
+        <div class="form-group">
+            <label for="user-role">Rôle :</label>
+            <select id="user-role" required>
+                <option value="user">Utilisateur</option>
+                <option value="admin">Administrateur</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="user-password">Mot de passe :</label>
+            <input type="password" id="user-password" required>
+        </div>
+        <button type="submit" class="btn btn-success">Créer</button>
+        <button type="button" class="btn" onclick="hideNewUserForm()">Annuler</button>
+    </form>
+</div>
