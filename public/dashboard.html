@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Soft Absences</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .card-content {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .recent-absences {
+            margin-top: 2rem;
+        }
+
+        .absence-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .absence-item:last-child {
+            border-bottom: none;
+        }
+
+        .absence-info h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .absence-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-approved {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-rejected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .main-content {
+                padding: 0 1rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">🏢 Soft Absences</div>
+            <div class="user-info">
+                <span id="userName">Chargement...</span>
+                <button class="logout-btn" onclick="logout()">Déconnexion</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>📊 Statistiques</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalAbsences">-</div>
+                        <div class="stat-label">Total Absences</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="pendingAbsences">-</div>
+                        <div class="stat-label">En Attente</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="approvedAbsences">-</div>
+                        <div class="stat-label">Approuvées</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🚀 Actions Rapides</h3>
+                <div class="card-content">
+                    <p>Gérez vos absences et demandes rapidement</p>
+                    <div class="action-buttons">
+                        <a href="#" class="btn btn-primary" onclick="showNewAbsenceForm()">Nouvelle Demande</a>
+                        <a href="#" class="btn btn-secondary" onclick="showCalendar()">Voir Calendrier</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📅 Prochaines Absences</h3>
+                <div class="card-content">
+                    <div id="upcomingAbsences">
+                        <p>Chargement des absences...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card recent-absences">
+            <h3>📋 Absences Récentes</h3>
+            <div id="recentAbsencesList">
+                <p>Chargement...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Vérifier l'authentification
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/static/index.html';
+        }
+
+        // Charger les informations utilisateur
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        document.getElementById('userName').textContent = user.first_name ? `${user.first_name} ${user.last_name}` : 'Utilisateur';
+
+        // Charger les données du dashboard
+        async function loadDashboardData() {
+            try {
+                const [absencesResponse, usersResponse] = await Promise.all([
+                    fetch('/absences', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }),
+                    fetch('/users', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    })
+                ]);
+
+                if (absencesResponse.ok) {
+                    const absencesData = await absencesResponse.json();
+                    updateAbsencesStats(absencesData.absences || []);
+                    updateRecentAbsences(absencesData.absences || []);
+                }
+
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    // Mettre à jour les statistiques utilisateurs si nécessaire
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+            }
+        }
+
+        function updateAbsencesStats(absences) {
+            const total = absences.length;
+            const pending = absences.filter(a => a.status === 'EN_ATTENTE').length;
+            const approved = absences.filter(a => a.status === 'APPROUVEE').length;
+
+            document.getElementById('totalAbsences').textContent = total;
+            document.getElementById('pendingAbsences').textContent = pending;
+            document.getElementById('approvedAbsences').textContent = approved;
+        }
+
+        function updateRecentAbsences(absences) {
+            const recentList = document.getElementById('recentAbsencesList');
+            const upcomingList = document.getElementById('upcomingAbsences');
+
+            if (absences.length === 0) {
+                recentList.innerHTML = '<p>Aucune absence récente</p>';
+                upcomingList.innerHTML = '<p>Aucune absence à venir</p>';
+                return;
+            }
+
+            // Trier par date de création (plus récentes en premier)
+            const sortedAbsences = absences.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const recentAbsences = sortedAbsences.slice(0, 5);
+
+            // Filtrer les absences à venir (dates futures)
+            const upcomingAbsences = absences.filter(a => new Date(a.start_date) > new Date()).slice(0, 3);
+
+            // Afficher les absences récentes
+            recentList.innerHTML = recentAbsences.map(absence => `
+                <div class="absence-item">
+                    <div class="absence-info">
+                        <h4>${absence.type}</h4>
+                        <p>${absence.user_name} - ${new Date(absence.start_date).toLocaleDateString()} au ${new Date(absence.end_date).toLocaleDateString()}</p>
+                    </div>
+                    <span class="status-badge status-${absence.status.toLowerCase()}">${absence.status}</span>
+                </div>
+            `).join('');
+
+            // Afficher les absences à venir
+            upcomingList.innerHTML = upcomingAbsences.map(absence => `
+                <div class="absence-item">
+                    <div class="absence-info">
+                        <h4>${absence.type}</h4>
+                        <p>${absence.user_name} - ${new Date(absence.start_date).toLocaleDateString()} au ${new Date(absence.end_date).toLocaleDateString()}</p>
+                    </div>
+                    <span class="status-badge status-${absence.status.toLowerCase()}">${absence.status}</span>
+                </div>
+            `).join('');
+        }
+
+        function showNewAbsenceForm() {
+            alert('Fonctionnalité à implémenter : Formulaire de nouvelle demande d\'absence');
+        }
+
+        function showCalendar() {
+            alert('Fonctionnalité à implémenter : Vue calendrier');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/static/index.html';
+        }
+
+        // Charger les données au chargement de la page
+        loadDashboardData();
+    </script>
+</body>
+</html> 

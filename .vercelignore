@@ -1,6 +1,5 @@
 alembic/
 tests/
-static/
 __pycache__/
 *.pyc
 *.pyo
