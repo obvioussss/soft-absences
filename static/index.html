@@ -3,304 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soft Absences - Gestion des Absences</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-        }
-
-        .logo {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #667eea;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 2rem;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-        }
-
-        .status-card {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
-        }
-
-        .api-info {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .api-info h3 {
-            color: #495057;
-            margin-bottom: 15px;
-        }
-
-        .endpoints {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .endpoint {
-            background: #667eea;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            text-decoration: none;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .endpoint:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .features {
-            margin-top: 30px;
-            text-align: left;
-        }
-
-        .features h3 {
-            color: #333;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .feature-list {
-            list-style: none;
-        }
-
-        .feature-list li {
-            padding: 8px 0;
-            color: #555;
-            position: relative;
-            padding-left: 25px;
-        }
-
-        .feature-list li:before {
-            content: "✅";
-            position: absolute;
-            left: 0;
-            color: #4CAF50;
-        }
-
-        .login-section {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 15px;
-        }
-
-        .login-section h3 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .form-group {
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .login-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .error-message {
-            color: #dc3545;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 10px;
-            border-radius: 8px;
-            margin-top: 10px;
-            display: none;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-                margin: 20px;
-            }
-            
-            .logo {
-                font-size: 2rem;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
+    <title>Gestion des Absences</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- Script de configuration en premier -->
+    <script src="js/config.js"></script>
 </head>
 <body>
     <div class="container">
-        <div class="logo">🏢</div>
-        <h1>Soft Absences</h1>
-        <p class="subtitle">Gestion des absences et congés</p>
-        
-        <div class="status-card">
-            <h3>✅ Application Opérationnelle</h3>
-            <p>L'application est prête à être utilisée</p>
+        <div class="header">
+            <h1>🏢 Gestion des Absences</h1>
         </div>
+        
+        <!-- Section d'authentification -->
+        <div id="auth-section" class="auth-section">
+            <h2>Connexion</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email :</label>
+                    <input type="email" id="email" value="hello.obvious@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe :</label>
+                    <input type="password" id="password" value="admin123" required>
+                </div>
+                <button type="submit" class="btn">Se connecter</button>
+            </form>
+        </div>
+        
+        <!-- Contenu principal -->
+        <div id="main-content" class="main-content">
+            <div class="user-info" id="user-info">
+                <!-- Info utilisateur -->
+            </div>
+            <div style="clear: both;"></div>
+            
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showTab('dashboard')">Tableau de bord</button>
+                <button class="nav-tab" onclick="showTab('calendar')">Calendrier</button>
+                <button class="nav-tab user-only" onclick="showTab('procedure')">Mes Demandes</button>
+                <button class="nav-tab admin-only" onclick="showTab('admin-users')" style="display: none;">Utilisateurs</button>
+                <button class="nav-tab admin-only" onclick="showTab('admin-requests')" style="display: none;">📋 Demandes</button>
+                <button class="nav-tab admin-only" onclick="openGoogleCalendarAdmin()" style="display: none;">Google Calendar</button>
+                <button class="nav-tab" onclick="logout()">Déconnexion</button>
+            </div>
+            
+            <!-- Tableau de bord -->
+            <div id="dashboard" class="tab-content active">
+                <h2>Tableau de bord</h2>
+                <div id="dashboard-content" class="loading">Chargement...</div>
+            </div>
+            
 
-        <div class="api-info">
-            <h3>🔗 API Endpoints</h3>
-            <div class="endpoints">
-                <a href="/health" class="endpoint">Health Check</a>
-                <a href="/users" class="endpoint">Utilisateurs</a>
-                <a href="/absences" class="endpoint">Absences</a>
-                <a href="/docs" class="endpoint">Documentation</a>
+            
+            <!-- Calendrier -->
+            <div id="calendar" class="tab-content">
+                <!-- Calendrier pour admin (vue mensuelle) et utilisateurs (vue annuelle) -->
+                <div id="calendar-section" class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="calendar-nav">
+                            <button id="prev-period" class="nav-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <h2 id="calendar-title">Calendrier</h2>
+                            <button id="next-period" class="nav-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="calendar-actions">
+                            <button id="today-btn" class="btn btn-secondary">Aujourd'hui</button>
+                            <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter absence</button>
+                            <div id="calendar-summary" class="calendar-summary" style="display: none;">
+                                <span id="summary-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vue mensuelle pour admin -->
+                    <div id="monthly-calendar" class="monthly-view" style="display: none;">
+                        <div class="calendar-grid">
+                            <div class="calendar-weekdays">
+                                <div class="weekday">Lun</div>
+                                <div class="weekday">Mar</div>
+                                <div class="weekday">Mer</div>
+                                <div class="weekday">Jeu</div>
+                                <div class="weekday">Ven</div>
+                                <div class="weekday">Sam</div>
+                                <div class="weekday">Dim</div>
+                            </div>
+                            <div id="calendar-days" class="calendar-days">
+                                <!-- Les jours seront générés par JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vue annuelle pour utilisateurs -->
+                    <div id="yearly-calendar" class="yearly-view" style="display: none;">
+                        <div class="year-grid">
+                            <!-- Les 12 mois seront générés par JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Modal pour afficher les détails d'un événement -->
+                    <div id="event-modal" class="modal" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="event-title">Détails de l'absence</h3>
+                                <button class="modal-close" onclick="closeEventModal()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="event-details">
+                                    <div class="detail-row">
+                                        <strong>Utilisateur:</strong>
+                                        <span id="event-user"></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <strong>Type:</strong>
+                                        <span id="event-type"></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <strong>Dates:</strong>
+                                        <span id="event-dates"></span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <strong>Status:</strong>
+                                        <span id="event-status"></span>
+                                    </div>
+                                    <div class="detail-row" id="event-reason-row" style="display: none;">
+                                        <strong>Raison:</strong>
+                                        <span id="event-reason"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulaire admin pour créer une absence -->
+                    <div id="admin-absence-modal" class="modal" style="display: none;">
+                        <div class="modal-content" style="max-width: 600px;">
+                            <div class="modal-header">
+                                <h3 style="color: #e74c3c; margin: 0;">👨‍💼 Créer une absence (Admin)</h3>
+                                <button class="modal-close" onclick="hideAdminAbsenceForm()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="admin-absence-form-element">
+                                    <div class="form-group">
+                                        <label for="admin-absence-user">Utilisateur :</label>
+                                        <select id="admin-absence-user" required>
+                                            <option value="">Sélectionner un utilisateur...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-absence-type">Type d'absence :</label>
+                                        <select id="admin-absence-type" required>
+                                            <option value="vacances">Vacances</option>
+                                            <option value="maladie">Maladie</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-start-date">Date de début :</label>
+                                        <input type="date" id="admin-start-date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-end-date">Date de fin :</label>
+                                        <input type="date" id="admin-end-date" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-reason">Raison (optionnel) :</label>
+                                        <textarea id="admin-reason" placeholder="Motif de l'absence..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-comment">Commentaire admin (optionnel) :</label>
+                                        <textarea id="admin-comment" placeholder="Commentaire pour l'utilisateur..."></textarea>
+                                    </div>
+                                    <div style="text-align: right; margin-top: 20px;">
+                                        <button type="button" class="btn" onclick="hideAdminAbsenceForm()">Annuler</button>
+                                        <button type="submit" class="btn btn-success">Créer l'absence</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Procédure -->
+            <div id="procedure" class="tab-content">
+                <h2>Mes Demandes d'Absence</h2>
+                
+                <!-- Boutons d'action -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn" onclick="showNewRequestForm()">➕ Nouvelle demande de congé</button>
+                    <button class="btn btn-warning" onclick="showSicknessDeclarationForm()">🏥 Déclaration de maladie</button>
+                </div>
+                
+                <!-- Formulaire de nouvelle demande intégré -->
+                <div id="new-request-form" style="display: none; margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h3>Nouvelle demande d'absence</h3>
+                    <form id="absence-form">
+                        <div class="form-group">
+                            <label for="absence-type">Type d'absence :</label>
+                            <select id="absence-type" required>
+                                <option value="vacances">Vacances</option>
+                                <option value="maladie">Maladie</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="start-date">Date de début :</label>
+                            <input type="date" id="start-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end-date">Date de fin :</label>
+                            <input type="date" id="end-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reason">Raison (optionnel) :</label>
+                            <textarea id="reason" placeholder="Motif de la demande..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success">Soumettre</button>
+                        <button type="button" class="btn" onclick="hideNewRequestForm()">Annuler</button>
+                    </form>
+                </div>
+                
+                <!-- Formulaire de déclaration de maladie -->
+                <div id="sickness-declaration-form" style="display: none; margin-bottom: 20px; background: #fff3cd; padding: 20px; border-radius: 8px; border: 2px solid #ffc107;">
+                    <h3 style="color: #856404;">🏥 Déclaration de maladie avec certificat médical</h3>
+                    <p style="color: #856404; margin-bottom: 15px;">
+                        <strong>Note:</strong> Cette déclaration sera automatiquement envoyée avec votre certificat médical à hello.obvious@gmail.com
+                    </p>
+                    <form id="sickness-form" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="sickness-start-date">Date de début :</label>
+                            <input type="date" id="sickness-start-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sickness-end-date">Date de fin :</label>
+                            <input type="date" id="sickness-end-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sickness-description">Description (optionnel) :</label>
+                            <textarea id="sickness-description" placeholder="Détails sur l'arrêt maladie..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="sickness-pdf">Certificat médical (PDF) :</label>
+                            <input type="file" id="sickness-pdf" accept=".pdf" required>
+                            <small style="color: #856404; display: block; margin-top: 5px;">Fichier PDF uniquement, maximum 10MB</small>
+                        </div>
+                        <button type="submit" class="btn btn-warning">📧 Envoyer la déclaration</button>
+                        <button type="button" class="btn" onclick="hideSicknessDeclarationForm()">Annuler</button>
+                    </form>
+                </div>
+                
+                <!-- Liste des demandes de l'utilisateur -->
+                <div id="user-requests-section" style="margin-bottom: 30px;">
+                    <h3>📋 Mes demandes en cours</h3>
+                    <div id="user-requests-list" class="loading">Chargement...</div>
+                </div>
+                
+                <!-- Section procédure séparée -->
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
+                    <h3>📖 Procédure et Informations</h3>
+                    <div style="max-width: 800px; line-height: 1.6;">
+                        <p>Pour assurer une bonne organisation au sein de l'équipe, veuillez suivre la procédure ci-dessous pour toute demande de congés :</p>
+                    
+                    <ol style="margin: 20px 0; padding-left: 30px;">
+                        <li><strong>Délai de demande :</strong> Formuler votre demande au moins 2 mois à l'avance (sauf urgence) par email hello.obvious@gmail.com</li>
+                        <li><strong>Validation :</strong> La demande doit être approuvée par un réponse écrite via la chaine de mail.</li>
+                        <li><strong>Confirmation :</strong> Une fois validée, l'absence sera notée dans le calendrier d'équipe</li>
+                    </ol>
+                    
+                    <h3>Types d'Absences</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>Congés Payés Annuels</strong></h4>
+                        <p>Chaque salarié dispose de 25 jours ouvrés de congés payés par an (du 1er juin au 31 mai).</p>
+                        <p>Le fractionnement des congés est possible sous certaines conditions.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>RTT (Réduction du Temps de Travail)</strong></h4>
+                        <p>Nombre de jours selon votre contrat et la convention collective applicable.</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>Congés Exceptionnels</strong></h4>
+                        <ul style="margin-left: 20px;">
+                            <li>Mariage/PACS : 4 jours</li>
+                            <li>Naissance/Adoption : 3 jours</li>
+                            <li>Décès d'un proche : 1 à 3 jours selon le lien de parenté</li>
+                            <li>Déménagement : 1 jour</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4><strong>Arrêt Maladie</strong></h4>
+                        <p>En cas de maladie, informer votre responsable dès que possible.</p>
+                        <p>Envoyer votre arrêt de travail dans les 48 heures à l'employeur et à la CPAM.</p>
+                        <p><strong>Nouveau:</strong> Vous pouvez maintenant utiliser le formulaire de déclaration de maladie ci-dessus pour envoyer automatiquement votre certificat médical.</p>
+                    </div>
+                </div>
+            </div>
+            </div>
+            
+            <!-- Admin: Gestion des utilisateurs -->
+            <div id="admin-users" class="tab-content">
+                <h2>Gestion des utilisateurs</h2>
+                <button class="btn" onclick="showNewUserForm()">➕ Nouvel utilisateur</button>
+                
+                <!-- Formulaire utilisateur intégré -->
+                <div id="new-user-form" style="display: none; margin-top: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px;">
+                    <h3>Nouvel utilisateur</h3>
+                    <form id="user-form">
+                        <div class="form-group">
+                            <label for="user-email">Email :</label>
+                            <input type="email" id="user-email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-first-name">Prénom :</label>
+                            <input type="text" id="user-first-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-last-name">Nom :</label>
+                            <input type="text" id="user-last-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-role">Rôle :</label>
+                            <select id="user-role" required>
+                                <option value="user">Utilisateur</option>
+                                <option value="admin">Administrateur</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="user-password">Mot de passe :</label>
+                            <input type="password" id="user-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Créer</button>
+                        <button type="button" class="btn" onclick="hideNewUserForm()">Annuler</button>
+                    </form>
+                </div>
+                
+                <div id="users-list" class="loading" style="margin-top: 20px;">Chargement...</div>
+                
+                <!-- Modal pour le résumé des absences d'un utilisateur -->
+                <div id="user-absence-modal" class="modal" style="display: none;">
+                    <div class="modal-content" style="max-width: 800px;">
+                        <div class="modal-header">
+                            <h3 id="user-absence-title">Résumé des absences</h3>
+                            <button class="modal-close" onclick="closeUserAbsenceModal()">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="user-absence-summary" class="loading">Chargement...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Admin: Toutes les demandes -->
+            <div id="admin-requests" class="tab-content">
+                <h2>📋 Gestion des Demandes - Administrateur</h2>
+                
+                <!-- Sous-onglets pour les demandes -->
+                <div class="sub-tabs">
+                    <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab" onclick="showSubTab('sickness-declarations')">🏥 Déclarations de Maladie</button>
+                </div>
+                
+                <!-- Contenu des sous-onglets -->
+                <div id="vacation-requests" class="sub-tab-content active">
+                    <div id="all-requests-list" class="loading">Chargement...</div>
+                </div>
+                
+                <div id="sickness-declarations" class="sub-tab-content">
+                    <div id="admin-sickness-list" class="loading">Chargement...</div>
+                </div>
             </div>
         </div>
-
-        <div class="features">
-            <h3>✨ Fonctionnalités</h3>
-            <ul class="feature-list">
-                <li>Gestion des demandes d'absence</li>
-                <li>Validation par les administrateurs</li>
-                <li>Calendrier des absences</li>
-                <li>Notifications par email</li>
-                <li>Déclarations de maladie</li>
-                <li>Intégration Google Calendar</li>
-            </ul>
-        </div>
-
-        <div class="login-section">
-            <h3>🔐 Connexion</h3>
-            <form class="login-form" id="loginForm">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required placeholder="admin@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" required placeholder="admin123">
-                </div>
-                <button type="submit" class="login-btn">Se connecter</button>
-            </form>
-            <div class="error-message" id="errorMessage"></div>
-        </div>
     </div>
-
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('errorMessage');
-            
-            try {
-                const response = await fetch('/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        password: password
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    localStorage.setItem('token', data.access_token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    
-                    // Rediriger vers le dashboard
-                    window.location.href = '/static/dashboard.html';
-                } else {
-                    const errorData = await response.json();
-                    errorMessage.textContent = errorData.detail || 'Erreur de connexion';
-                    errorMessage.style.display = 'block';
-                }
-            } catch (error) {
-                errorMessage.textContent = 'Erreur de connexion au serveur';
-                errorMessage.style.display = 'block';
-            }
-        });
-
-        // Vérifier si l'utilisateur est déjà connecté
-        const token = localStorage.getItem('token');
-        if (token) {
-            // Rediriger vers le dashboard si déjà connecté
-            window.location.href = '/static/dashboard.html';
-        }
-    </script>
+    
+    <!-- Scripts modulaires -->
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/calendar.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/sickness.js"></script>
+    <script src="js/main.js"></script>
 </body>
-</html> 
+</html>

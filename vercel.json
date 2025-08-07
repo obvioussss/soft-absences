@@ -2,11 +2,19 @@
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/public/$1"
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/style.css",
+      "dest": "/api/index.py"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/api/index.py"
     },
     {
       "src": "/",
-      "dest": "/public/index.html"
+      "dest": "/api/index.py"
     },
     {
       "src": "/(.*)",
