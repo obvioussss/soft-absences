@@ -1524,7 +1524,8 @@ class Calendar {
                 throw new Error('Erreur lors du chargement du calendrier');
             }
 
-            this.events = await response.json();
+            const data = await response.json();
+            this.events = Array.isArray(data) ? data : [];
             this.renderMonthlyCalendar();
         } catch (error) {
             console.error('Erreur:', error);
@@ -1559,7 +1560,8 @@ class Calendar {
                 throw new Error('Erreur lors du chargement du calendrier');
             }
 
-            this.events = await eventsResponse.json();
+            const data = await eventsResponse.json();
+            this.events = Array.isArray(data) ? data : [];
             const summary = await summaryResponse.json();
             
             // Afficher le résumé
@@ -1732,6 +1734,7 @@ class Calendar {
     }
 
     getEventsForDate(date) {
+        if (!Array.isArray(this.events)) return [];
         return this.events.filter(event => {
             // Utiliser les dates en format string pour éviter les problèmes de fuseau horaire
             const dateStr = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
