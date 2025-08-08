@@ -101,7 +101,13 @@ def init_db():
     Nous utilisons donc un fichier SQLite dans /tmp afin que les écritures persistent
     au moins pendant toute la durée de vie de l'instance (bien plus fiable que :memory:).
     """
-    db_url = os.getenv('DATABASE_URL', '').strip()
+    # Supporte automatiquement les variables créées par l'intégration Neon/Vercel
+    db_url = (
+        os.getenv('DATABASE_URL', '').strip()
+        or os.getenv('POSTGRES_URL', '').strip()
+        or os.getenv('POSTGRES_PRISMA_URL', '').strip()
+        or os.getenv('NEON_DATABASE_URL', '').strip()
+    )
     if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
         pg = _init_db_postgres(db_url)
         if pg is not None:
