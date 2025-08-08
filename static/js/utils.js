@@ -238,6 +238,12 @@ async function loadUserRequests() {
             apiCall('/sickness-declarations/')
         ]);
 
+        if (!Array.isArray(requests)) {
+            const msg = (requests && (requests.error || requests.detail)) ? (requests.error || requests.detail) : 'Données indisponibles';
+            requestsListDiv.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+            return;
+        }
+
         if (requests.length === 0) {
             requestsListDiv.innerHTML = '<p>Aucune demande de vacances.</p>';
             return;
@@ -247,7 +253,7 @@ async function loadUserRequests() {
         html += '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Détails</th><th>Créée le</th></tr></thead><tbody>';
 
         // Demandes d'absence (vacances/maladie déclarées via demandes)
-        requests.forEach(request => {
+        (Array.isArray(requests) ? requests : []).forEach(request => {
             const startDate = formatDateSafe(request.start_date);
             const endDate = formatDateSafe(request.end_date);
             const createdDate = formatDateSafe(request.created_at);
