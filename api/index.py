@@ -421,7 +421,7 @@ def handle_user_absence_summary(user_id: int):
         approved = 0
         recent_absences = []
         for r in rows:
-            s = date.fromisoformat(r[0]); e = date.fromisoformat(r[1])
+            s = _to_date(r[0]); e = _to_date(r[1])
             days = (e - s).days + 1
             total_days += days
             if r[2] == 'VACANCES':
@@ -520,8 +520,8 @@ def handle_dashboard(current_user):
         from datetime import date
         used_days = 0
         for row in approved:
-            start = date.fromisoformat(row[0])
-            end = date.fromisoformat(row[1])
+            start = _to_date(row[0])
+            end = _to_date(row[1])
             used_days += (end - start).days + 1
 
         # Compter en attente et approuvées
@@ -653,8 +653,8 @@ def handle_calendar_user(year: int, current_user):
             events.append({
                 "id": r[0],
                 "title": ("Vacances" if r[1]=='VACANCES' else 'Maladie') + (" (En attente)" if r[4]=='EN_ATTENTE' else (" (Refusé)" if r[4]=='REFUSE' else "")),
-                "start": str(max(start_date, __import__('datetime').date.fromisoformat(r[2]))),
-                "end": str(min(end_date, __import__('datetime').date.fromisoformat(r[3]))),
+                "start": str(max(start_date, _to_date(r[2]))),
+                "end": str(min(end_date, _to_date(r[3]))),
                 "type": (r[1] or '').lower(),
                 "status": (r[4] or '').lower(),
                 "user_name": f"{current_user['first_name']} {current_user['last_name']}",
@@ -678,8 +678,8 @@ def handle_calendar_user(year: int, current_user):
             events.append({
                 "id": s[0],
                 "title": f"Arrêt maladie{email_status}",
-                "start": str(max(start_date, __import__('datetime').date.fromisoformat(s[1]))),
-                "end": str(min(end_date, __import__('datetime').date.fromisoformat(s[2]))),
+                "start": str(max(start_date, _to_date(s[1]))),
+                "end": str(min(end_date, _to_date(s[2]))),
                 "type": "maladie",
                 "status": "approuve",
                 "user_name": f"{current_user['first_name']} {current_user['last_name']}",
@@ -709,8 +709,8 @@ def handle_calendar_summary(year: int, current_user):
         rows = cursor.fetchall()
         used_days = 0
         for r in rows:
-            s = __import__('datetime').date.fromisoformat(r[0])
-            e = __import__('datetime').date.fromisoformat(r[1])
+            s = _to_date(r[0])
+            e = _to_date(r[1])
             s = max(s, start_date)
             e = min(e, end_date)
             used_days += (e - s).days + 1
