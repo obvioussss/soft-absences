@@ -1116,27 +1116,52 @@ class handler(BaseHTTPRequestHandler):
                         except Exception as e:
                             response = {"error": str(e)}
             elif self.path.rstrip('/') == '/sickness-declarations':
-                # Créer une déclaration de maladie (multipart accepté)
+                # Créer une déclaration de maladie (multipart accepté + PDF enregistré)
                 current_user = get_user_from_auth_header(self.headers)
                 if not current_user:
                     response = {"error": "Unauthorized"}
                 else:
                     start_date = None; end_date = None; description = None
+                    pdf_filename = None; pdf_path = None
+                    fs = None
                     if isinstance(data, dict):
                         start_date = data.get('start_date'); end_date = data.get('end_date'); description = data.get('description')
+                        fs = data.get('__fs__')
                     if not start_date or not end_date:
                         response = {"error": "Invalid payload"}
                     else:
                         try:
-                            conn = init_db()
-                            cursor = conn.cursor()
+                            # Sauvegarder le PDF si fourni (requis côté front)
+                            if fs and 'pdf_file' in fs:
+                                try:
+                                    pdf_field = fs['pdf_file']
+                                    original_name = getattr(pdf_field, 'filename', 'document.pdf') or 'document.pdf'
+                                    base_dir = '/tmp/uploads/sickness_declarations'
+                                    os.makedirs(base_dir, exist_ok=True)
+                                    unique_name = f"{uuid.uuid4()}.pdf"
+                                    file_path = os.path.join(base_dir, unique_name)
+                                    with open(file_path, 'wb') as out:
+                                        out.write(pdf_field.file.read())
+                                    pdf_filename = original_name
+                                    pdf_path = file_path
+                                except Exception as e:
+                                    response = {"error": f"Erreur sauvegarde PDF: {str(e)}"}
+                                    self.wfile.write(safe_json_dumps(response).encode('utf-8'))
+                                    return
+                            else:
+                                # Si pas de fichier détecté dans la requête multipart
+                                response = {"error": "PDF manquant (pdf_file)"}
+                                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
+                                return
+
+                            conn = init_db(); cursor = conn.cursor()
                             cursor.execute('''
-                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, email_sent, viewed_by_admin)
-                                VALUES (?, ?, ?, ?, 0, 0)
-                            ''', (current_user['id'], start_date, end_date, description))
-                            conn.commit()
-                            new_id = cursor.lastrowid
-                            # Envoi email (meilleur effort) à admins + user
+                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
+                                VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+                            ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path))
+                            conn.commit(); new_id = cursor.lastrowid
+
+                            # Envoi email (meilleur effort) à admins + user avec la pièce jointe
                             try:
                                 subject = f"Gestion des absences - Déclaration maladie - {current_user['first_name']} {current_user['last_name']}"
                                 body = f"Déclaration du {start_date} au {end_date}. Description: {description or '—'}"
@@ -1146,7 +1171,7 @@ class handler(BaseHTTPRequestHandler):
                                 if DEFAULT_ADMIN_EMAIL not in recipients:
                                     recipients.append(DEFAULT_ADMIN_EMAIL)
                                 recipients.append(current_user['email'])
-                                ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>")
+                                ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>", attachment_path=pdf_path, attachment_filename=pdf_filename)
                                 if ok:
                                     cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=?', (new_id,))
                                     conn.commit()
@@ -1158,6 +1183,7 @@ class handler(BaseHTTPRequestHandler):
                                 "start_date": start_date,
                                 "end_date": end_date,
                                 "description": description,
+                                "pdf_filename": pdf_filename,
                                 "email_sent": True,
                                 "viewed_by_admin": False,
                                 "user": {"id": current_user['id'], "email": current_user['email'], "first_name": current_user['first_name'], "last_name": current_user['last_name']}
