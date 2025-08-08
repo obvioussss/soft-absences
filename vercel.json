@@ -1,7 +1,7 @@
 {
   "routes": [
     { "src": "/", "dest": "/static/index.html" },
-    { "src": "/dashboard", "dest": "/static/index.html" },
+    { "src": "/dashboard/?", "dest": "/static/index.html" },
 
     { "src": "/js/(.*)", "dest": "/static/js/$1" },
     { "src": "/css/(.*)", "dest": "/static/css/$1" },
