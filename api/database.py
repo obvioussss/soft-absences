@@ -3,6 +3,90 @@ import hashlib
 import os
 from datetime import datetime
 
+_pg_conn = None
+
+def _init_db_postgres(db_url: str):
+    """Initialise (si besoin) la base Postgres (Neon) et renvoie une connexion réutilisable."""
+    global _pg_conn
+    if _pg_conn is not None:
+        return _pg_conn
+    try:
+        import psycopg
+        _pg_conn = psycopg.connect(db_url, autocommit=True)
+        cur = _pg_conn.cursor()
+        # Création des tables si absentes (syntaxe Postgres)
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id BIGSERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                first_name TEXT NOT NULL,
+                last_name TEXT NOT NULL,
+                password_hash TEXT NOT NULL,
+                role TEXT DEFAULT 'USER',
+                is_active BOOLEAN DEFAULT TRUE,
+                annual_leave_days INTEGER DEFAULT 25,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS absence_requests (
+                id BIGSERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                reason TEXT,
+                status TEXT DEFAULT 'EN_ATTENTE',
+                approved_by_id INTEGER,
+                admin_comment TEXT,
+                google_calendar_event_id TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sickness_declarations (
+                id BIGSERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                description TEXT,
+                pdf_filename TEXT,
+                pdf_path TEXT,
+                email_sent BOOLEAN DEFAULT FALSE,
+                viewed_by_admin BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        # Admin par défaut si absent
+        admin_local_password = hashlib.sha256("admin123".encode()).hexdigest()
+        cur.execute(
+            """
+            INSERT INTO users (email, first_name, last_name, password_hash, role)
+            SELECT %s, %s, %s, %s, %s
+            WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = %s)
+            """,
+            (
+                'hello.obvious@gmail.com', 'Admin', 'System', admin_local_password, 'ADMIN',
+                'hello.obvious@gmail.com'
+            )
+        )
+        cur.close()
+        return _pg_conn
+    except Exception:
+        # Si psycopg indisponible ou erreur, on ne casse pas le runtime
+        _pg_conn = None
+        return None
+
+
 def init_db():
     """Initialise la base de données persistante (fichier) pour l'environnement serverless.
 
@@ -10,6 +94,13 @@ def init_db():
     Nous utilisons donc un fichier SQLite dans /tmp afin que les écritures persistent
     au moins pendant toute la durée de vie de l'instance (bien plus fiable que :memory:).
     """
+    db_url = os.getenv('DATABASE_URL', '').strip()
+    if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
+        pg = _init_db_postgres(db_url)
+        if pg is not None:
+            return pg
+
+    # Fallback SQLite fichier (persistance locale de l'instance)
     db_file = os.getenv('DB_FILE', '/tmp/soft_absences.db')
     # Assurer l'existence du dossier cible
     os.makedirs(os.path.dirname(db_file), exist_ok=True)
