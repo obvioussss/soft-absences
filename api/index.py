@@ -1404,7 +1404,48 @@ class handler(BaseHTTPRequestHandler):
 
             response = {"error": "Route non trouvée"}
 
-            if path.startswith('/absence-requests/') and path.endswith('/status'):
+            if path.startswith('/absence-requests/admin/'):
+                # PUT /absence-requests/admin/{id} (mise à jour admin complète)
+                current_user = get_user_from_auth_header(self.headers)
+                if not current_user or current_user.get('role') != 'admin':
+                    response = {"error": "Forbidden"}
+                else:
+                    try:
+                        request_id = int(path.split('/')[2])
+                    except Exception:
+                        request_id = 0
+                    payload = data or {}
+                    # Construire dynamiquement le SET
+                    fields = []
+                    params = []
+                    if 'type' in payload and payload.get('type'):
+                        fields.append('type = %s'); params.append(to_db_type(payload.get('type')))
+                    if 'start_date' in payload and payload.get('start_date'):
+                        fields.append('start_date = %s'); params.append(payload.get('start_date'))
+                    if 'end_date' in payload and payload.get('end_date'):
+                        fields.append('end_date = %s'); params.append(payload.get('end_date'))
+                    if 'reason' in payload:
+                        fields.append('reason = %s'); params.append(payload.get('reason'))
+                    if 'status' in payload and payload.get('status'):
+                        fields.append('status = %s'); params.append(to_db_status(payload.get('status')))
+                    if 'admin_comment' in payload:
+                        fields.append('admin_comment = %s'); params.append(payload.get('admin_comment'))
+                    # Garder une trace de l'admin qui a modifié
+                    fields.append('approved_by_id = %s'); params.append(current_user['id'])
+                    if request_id <= 0 or not fields:
+                        response = {"error": "Invalid payload"}
+                    else:
+                        try:
+                            conn = init_db(); cursor = conn.cursor()
+                            sql = f"UPDATE absence_requests SET {', '.join(fields)} WHERE id = %s"
+                            params.append(request_id)
+                            cursor.execute(sql, tuple(params))
+                            conn.commit(); conn.close()
+                            # Retour minimal
+                            response = {"id": request_id, **{k: payload.get(k) for k in ['type','start_date','end_date','reason','status','admin_comment'] if k in payload}}
+                        except Exception as e:
+                            response = {"error": str(e)}
+            elif path.startswith('/absence-requests/') and path.endswith('/status'):
                 try:
                     request_id = int(path.split('/')[2])
                 except Exception:
@@ -1477,6 +1518,26 @@ class handler(BaseHTTPRequestHandler):
                     response = {"message": "Utilisateur supprimé"}
                 except Exception as e:
                     response = {"error": str(e)}
+            elif path.startswith('/absence-requests/admin/'):
+                # DELETE /absence-requests/admin/{id}
+                current_user = get_user_from_auth_header(self.headers)
+                if not current_user or current_user.get('role') != 'admin':
+                    response = {"error": "Forbidden"}
+                else:
+                    try:
+                        request_id = int(path.split('/')[3])
+                    except Exception:
+                        request_id = 0
+                    if request_id <= 0:
+                        response = {"error": "Bad request"}
+                    else:
+                        try:
+                            conn = init_db(); cursor = conn.cursor()
+                            cursor.execute('DELETE FROM absence_requests WHERE id = %s', (request_id,))
+                            conn.commit(); conn.close()
+                            response = {"message": "Absence supprimée"}
+                        except Exception as e:
+                            response = {"error": str(e)}
             self.wfile.write(safe_json_dumps(response).encode('utf-8'))
         except Exception as e:
             self.send_response(500)

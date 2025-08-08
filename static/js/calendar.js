@@ -413,7 +413,7 @@ class Calendar {
             showAlert('Absence supprimée');
             closeEventModal();
             await this.showCalendar();
-            loadAllRequests && loadAllRequests();
+            if (typeof window.loadAllRequests === 'function') { window.loadAllRequests(); }
         } catch (e) {
             showAlert(e.message || 'Erreur suppression', 'error');
         }
@@ -430,7 +430,7 @@ class Calendar {
             showAlert('Absence mise à jour');
             closeEventModal();
             await this.showCalendar();
-            loadAllRequests && loadAllRequests();
+            if (typeof window.loadAllRequests === 'function') { window.loadAllRequests(); }
         } catch (e) {
             showAlert(e.message || 'Erreur mise à jour', 'error');
         }
