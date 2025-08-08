@@ -1168,10 +1168,10 @@ class handler(BaseHTTPRequestHandler):
                             conn = init_db(); cursor = conn.cursor()
                             # Essayer d'insérer aussi les octets (pdf_data)
                             try:
-                            cursor.execute('''
-                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
-                            ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path, file_bytes))
+                                cursor.execute('''
+                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
+                                ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path, file_bytes))
                             except Exception:
                                 # fallback si colonne absente
                                 cursor.execute('''
@@ -1192,7 +1192,7 @@ class handler(BaseHTTPRequestHandler):
                                 recipients.append(current_user['email'])
                                 ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>", attachment_path=pdf_path, attachment_filename=pdf_filename)
                                 if ok:
-                        cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=%s', (new_id,))
+                                    cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=%s', (new_id,))
                                     conn.commit()
                             except Exception:
                                 pass
@@ -1241,15 +1241,15 @@ class handler(BaseHTTPRequestHandler):
                             conn = init_db(); cursor = conn.cursor()
                             # Essayer d'enregistrer aussi les octets
                             try:
-                            cursor.execute('''
-                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
-                                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
-                                ''', (user_id, start_date, end_date, description, original_name, file_path, file_bytes))
+                                cursor.execute('''
+                                        INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
+                                        VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
+                                    ''', (user_id, start_date, end_date, description, original_name, file_path, file_bytes))
                             except Exception:
-                        cursor.execute('''
-                            INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
-                            VALUES (%s, %s, %s, %s, %s, %s, 0, 0)
-                        ''', (user_id, start_date, end_date, description, original_name, file_path))
+                                cursor.execute('''
+                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
+                                    VALUES (%s, %s, %s, %s, %s, %s, 0, 0)
+                                ''', (user_id, start_date, end_date, description, original_name, file_path))
                             conn.commit(); new_id = cursor.lastrowid
                             # Récupérer email user + admins
                             cursor.execute('SELECT email, first_name, last_name FROM users WHERE id = %s', (user_id,))
