@@ -342,15 +342,59 @@ class Calendar {
         const actionsRow = document.querySelector('#event-modal .admin-only');
         const editBtn = document.getElementById('event-edit-btn');
         const deleteBtn = document.getElementById('event-delete-btn');
+        const editForm = document.getElementById('event-edit-form');
+        const deleteConfirm = document.getElementById('event-delete-confirm');
+        const editStart = document.getElementById('edit-start-date');
+        const editEnd = document.getElementById('edit-end-date');
+        const editReason = document.getElementById('edit-reason');
+        const editStatus = document.getElementById('edit-status');
+        const editCancel = document.getElementById('event-edit-cancel');
+        const deleteCancel = document.getElementById('event-delete-cancel');
+        const deleteConfirmBtn = document.getElementById('event-delete-confirm-btn');
         if (actionsRow && editBtn && deleteBtn) {
             if (isAdmin && event.event_source === 'absence_request') {
                 actionsRow.style.display = 'flex';
-                editBtn.onclick = () => this.openEditDialog(event);
-                deleteBtn.onclick = () => this.confirmDelete(event);
+                // Préremplir le formulaire d'édition
+                if (editForm && editStart && editEnd && editReason && editStatus) {
+                    editForm.style.display = 'none';
+                    deleteConfirm.style.display = 'none';
+                    editStart.value = event.start;
+                    editEnd.value = event.end;
+                    editReason.value = event.reason || '';
+                    editStatus.value = event.status || 'en_attente';
+
+                    editForm.onsubmit = (e) => {
+                        e.preventDefault();
+                        const newStart = editStart.value;
+                        const newEnd = editEnd.value;
+                        if (!newStart || !newEnd) return;
+                        if (new Date(newStart) > new Date(newEnd)) { showAlert('La date de fin doit être postérieure à la date de début', 'error'); return; }
+                        const payload = {
+                            start_date: newStart,
+                            end_date: newEnd,
+                            reason: (editReason.value || null),
+                            status: editStatus.value
+                        };
+                        this.updateAbsence(event.id, payload);
+                    };
+                    if (editCancel) editCancel.onclick = () => { editForm.style.display = 'none'; };
+                }
+                if (editBtn) editBtn.onclick = () => {
+                    if (deleteConfirm) deleteConfirm.style.display = 'none';
+                    if (editForm) editForm.style.display = 'block';
+                };
+                if (deleteBtn) deleteBtn.onclick = () => {
+                    if (editForm) editForm.style.display = 'none';
+                    if (deleteConfirm) deleteConfirm.style.display = 'block';
+                };
+                if (deleteCancel) deleteCancel.onclick = () => { if (deleteConfirm) deleteConfirm.style.display = 'none'; };
+                if (deleteConfirmBtn) deleteConfirmBtn.onclick = () => this.confirmDelete(event);
             } else {
                 actionsRow.style.display = 'none';
-                editBtn.onclick = null;
-                deleteBtn.onclick = null;
+                if (editBtn) editBtn.onclick = null;
+                if (deleteBtn) deleteBtn.onclick = null;
+                if (editForm) editForm.style.display = 'none';
+                if (deleteConfirm) deleteConfirm.style.display = 'none';
             }
         }
     }
@@ -364,7 +408,6 @@ class Calendar {
     }
 
     async confirmDelete(event) {
-        if (!confirm('Supprimer cette absence ?')) return;
         try {
             await apiCall(`/absence-requests/admin/${event.id}`, { method: 'DELETE' });
             showAlert('Absence supprimée');
@@ -376,22 +419,7 @@ class Calendar {
         }
     }
 
-    openEditDialog(event) {
-        const newStart = prompt('Nouvelle date de début (YYYY-MM-DD):', event.start);
-        if (!newStart) return;
-        const newEnd = prompt('Nouvelle date de fin (YYYY-MM-DD):', event.end);
-        if (!newEnd) return;
-        const newReason = prompt('Raison (optionnel):', event.reason || '');
-        const statusMap = { 'en_attente': 'en_attente', 'approuve': 'approuve', 'refuse': 'refuse' };
-        const newStatus = prompt('Statut (en_attente/approuve/refuse):', event.status);
-        const normalizedStatus = statusMap[newStatus] ? newStatus : undefined;
-        this.updateAbsence(event.id, {
-            start_date: newStart,
-            end_date: newEnd,
-            reason: newReason || null,
-            status: normalizedStatus
-        });
-    }
+    // openEditDialog supprimé au profit du formulaire intégré
 
     async updateAbsence(id, payload) {
         try {
