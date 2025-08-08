@@ -113,6 +113,21 @@ def safe_json_dumps(obj):
     """Sérialise un objet en JSON de manière sécurisée"""
     return json.dumps(obj, default=json_serial, ensure_ascii=False)
 
+def _to_date(value):
+    """Convertit une valeur (date ou string) en datetime.date de manière robuste."""
+    try:
+        from datetime import date
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            # Conserver uniquement la partie date au cas où
+            return date.fromisoformat(value.split('T')[0])
+        return date.fromisoformat(str(value))
+    except Exception:
+        # Fallback: aujourd'hui pour éviter un crash serveur
+        from datetime import date as _d
+        return _d.today()
+
 def create_access_token(data: dict):
     """Créer un token JWT simplifié"""
     try:
@@ -565,11 +580,13 @@ def handle_calendar_admin(year: int, month: int):
 
         events = []
         for r in requests:
+            start_val = _to_date(r[2])
+            end_val = _to_date(r[3])
             events.append({
                 "id": r[0],
                 "title": f"{r[6]} {r[7]} - {'Vacances' if r[1]=='VACANCES' else 'Maladie'}" + (" (En attente)" if r[4]=='EN_ATTENTE' else (" (Refusé)" if r[4]=='REFUSE' else "")),
-                "start": str(max(start_date, __import__('datetime').date.fromisoformat(r[2]))),
-                "end": str(min(end_date, __import__('datetime').date.fromisoformat(r[3]))),
+                "start": str(max(start_date, start_val)),
+                "end": str(min(end_date, end_val)),
                 "type": (r[1] or '').lower(),
                 "status": (r[4] or '').lower(),
                 "user_name": f"{r[6]} {r[7]}",
@@ -592,11 +609,12 @@ def handle_calendar_admin(year: int, month: int):
         sicks = cursor.fetchall()
         for s in sicks:
             email_status = " ✉️" if s[4] else " ❌"
+            start_val = _to_date(s[1]); end_val = _to_date(s[2])
             events.append({
                 "id": s[0],
                 "title": f"{s[5]} {s[6]} - Arrêt maladie{email_status}",
-                "start": str(max(start_date, __import__('datetime').date.fromisoformat(s[1]))),
-                "end": str(min(end_date, __import__('datetime').date.fromisoformat(s[2]))),
+                "start": str(max(start_date, start_val)),
+                "end": str(min(end_date, end_val)),
                 "type": "maladie",
                 "status": "approuve",
                 "user_name": f"{s[5]} {s[6]}",
