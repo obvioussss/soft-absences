@@ -13,6 +13,7 @@
     { "src": "/(users|absence-requests|calendar|sickness-declarations|token|auth|api|health)(.*)", "dest": "/api/index.py" }
   ],
   "env": {
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "production",
+    "DB_FILE": "/tmp/soft_absences.db"
   }
 }

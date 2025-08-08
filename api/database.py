@@ -1,10 +1,20 @@
 import sqlite3
 import hashlib
+import os
 from datetime import datetime
 
 def init_db():
-    """Initialise la base de données en mémoire pour Vercel"""
-    conn = sqlite3.connect(':memory:')
+    """Initialise la base de données persistante (fichier) pour l'environnement serverless.
+
+    Note: Sur Vercel, le système de fichiers est en lecture seule sauf le répertoire /tmp.
+    Nous utilisons donc un fichier SQLite dans /tmp afin que les écritures persistent
+    au moins pendant toute la durée de vie de l'instance (bien plus fiable que :memory:).
+    """
+    db_file = os.getenv('DB_FILE', '/tmp/soft_absences.db')
+    # Assurer l'existence du dossier cible
+    os.makedirs(os.path.dirname(db_file), exist_ok=True)
+
+    conn = sqlite3.connect(db_file, check_same_thread=False)
     cursor = conn.cursor()
     
     # Créer les tables
@@ -58,7 +68,7 @@ def init_db():
         )
     ''')
     
-    # Créer uniquement l'admin par défaut pour un état « neuf »
+    # Créer uniquement l'admin par défaut si absent
     admin_local_password = hashlib.sha256("admin123".encode()).hexdigest()
     cursor.execute('''
         INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
