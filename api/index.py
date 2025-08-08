@@ -718,16 +718,23 @@ def handle_login(data):
 def handle_static_file(file_path):
     """Gère les fichiers statiques"""
     try:
-        content = get_static_content(file_path)
+        content_entry = get_static_content(file_path)
         
-        if not content:
+        if not content_entry:
             print(f"Contenu non trouvé pour: {file_path}")
             return None
         
-        return {
-            "content": content,
-            "mime_type": get_mime_type(file_path)
-        }
+        # content_entry peut déjà contenir le mime type
+        if isinstance(content_entry, dict) and "content" in content_entry:
+            return {
+                "content": content_entry["content"],
+                "mime_type": content_entry.get("mime_type", get_mime_type(file_path))
+            }
+        else:
+            return {
+                "content": content_entry,
+                "mime_type": get_mime_type(file_path)
+            }
     except Exception as e:
         print(f"Erreur lors de la récupération du fichier statique {file_path}: {e}")
         return None
