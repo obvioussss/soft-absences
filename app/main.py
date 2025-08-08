@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from app.database import engine, get_db
 from app.models import Base
 from app import models, schemas, crud, auth as app_auth
-from app.routes import auth, users, absence_requests, dashboard, calendar, google_calendar, sickness_declarations
+from app.routes import auth, users, absence_requests, dashboard, calendar, sickness_declarations
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -27,8 +27,7 @@ def get_cors_origins():
         "http://127.0.0.1:3000", 
         "http://localhost:8080",
         "https://soft-abscences.vercel.app",
-        "https://soft-abscences-zeta.vercel.app",
-        "https://soft-abscences-*.vercel.app",
+        
         "https://*.vercel.app"
     ]
     
@@ -71,7 +70,6 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(absence_requests.router, prefix="/absence-requests", tags=["absence-requests"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
-app.include_router(google_calendar.router, prefix="/google-calendar", tags=["google-calendar"])
 app.include_router(sickness_declarations.router, prefix="/sickness-declarations", tags=["sickness-declarations"])
 
 if __name__ == "__main__":

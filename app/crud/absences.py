@@ -4,7 +4,7 @@ from datetime import datetime, date
 from typing import Optional, List
 
 from app import models, schemas
-from app.google_calendar_service import google_calendar_service
+# Google Calendar supprimé
 
 def get_absence_request(db: Session, request_id: int) -> Optional[models.AbsenceRequest]:
     """Récupérer une demande d'absence par ID"""
@@ -55,13 +55,7 @@ def create_admin_absence(db: Session, request: schemas.AdminAbsenceCreate, admin
     db.commit()
     db.refresh(db_request)
     
-    # Si l'absence est approuvée et Google Calendar est activé, créer l'événement
-    if db_request.status == models.AbsenceStatus.APPROUVE and google_calendar_service.is_enabled():
-        event_id = google_calendar_service.create_absence_event(db_request)
-        if event_id:
-            db_request.google_calendar_event_id = event_id
-            db.commit()
-            db.refresh(db_request)
+    # Intégration Google Calendar supprimée
     
     return db_request
 
@@ -75,11 +69,7 @@ def update_absence_request(db: Session, request_id: int, request_update: schemas
     for field, value in update_data.items():
         setattr(db_request, field, value)
     
-    # Si la demande est approuvée et a un événement Google Calendar, le mettre à jour
-    if (db_request.status == models.AbsenceStatus.APPROUVE and 
-        db_request.google_calendar_event_id and 
-        google_calendar_service.is_enabled()):
-        google_calendar_service.update_absence_event(db_request.google_calendar_event_id, db_request)
+    # Intégration Google Calendar supprimée
     
     db.commit()
     db.refresh(db_request)
@@ -96,25 +86,7 @@ def update_absence_request_status(db: Session, request_id: int, admin_update: sc
     db_request.admin_comment = admin_update.admin_comment
     db_request.approved_by_id = admin_id
     
-    # Synchronisation avec Google Calendar
-    if admin_update.status == models.AbsenceStatus.APPROUVE and old_status != models.AbsenceStatus.APPROUVE:
-        # Demande approuvée : créer l'événement dans Google Calendar
-        if google_calendar_service.is_enabled():
-            event_id = google_calendar_service.create_absence_event(db_request)
-            if event_id:
-                db_request.google_calendar_event_id = event_id
-    
-    elif admin_update.status == models.AbsenceStatus.REFUSE and db_request.google_calendar_event_id:
-        # Demande refusée : supprimer l'événement de Google Calendar s'il existe
-        if google_calendar_service.is_enabled():
-            google_calendar_service.delete_absence_event(db_request.google_calendar_event_id)
-            db_request.google_calendar_event_id = None
-    
-    elif old_status == models.AbsenceStatus.APPROUVE and admin_update.status != models.AbsenceStatus.APPROUVE:
-        # Demande qui était approuvée mais plus maintenant : supprimer l'événement
-        if db_request.google_calendar_event_id and google_calendar_service.is_enabled():
-            google_calendar_service.delete_absence_event(db_request.google_calendar_event_id)
-            db_request.google_calendar_event_id = None
+    # Intégration Google Calendar supprimée
     
     db.commit()
     db.refresh(db_request)
@@ -126,9 +98,7 @@ def delete_absence_request(db: Session, request_id: int) -> bool:
     if not db_request:
         return False
     
-    # Supprimer l'événement Google Calendar associé s'il existe
-    if db_request.google_calendar_event_id and google_calendar_service.is_enabled():
-        google_calendar_service.delete_absence_event(db_request.google_calendar_event_id)
+    # Intégration Google Calendar supprimée
     
     db.delete(db_request)
     db.commit()

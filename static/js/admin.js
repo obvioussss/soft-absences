@@ -180,6 +180,94 @@ function hideAdminAbsenceForm() {
     document.getElementById('admin-absence-form-element').reset();
 }
 
+// Admin Sickness modal controls
+function showAdminSicknessForm() {
+    const modal = document.getElementById('admin-sickness-modal');
+    modal.style.display = 'flex';
+    (async () => {
+        try {
+            const users = await apiCall('/users/');
+            const userSelect = document.getElementById('admin-sickness-user');
+            userSelect.innerHTML = '<option value="">Sélectionner un utilisateur...</option>';
+            users.forEach(user => {
+                if (user.role !== 'admin') {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.first_name} ${user.last_name} (${user.email})`;
+                    userSelect.appendChild(option);
+                }
+            });
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('admin-sickness-start').value = today;
+            document.getElementById('admin-sickness-end').value = today;
+        } catch (e) { showAlert('Erreur chargement utilisateurs: ' + e.message, 'error'); }
+    })();
+
+    // Dropzone click/drag
+    const dropzone = document.getElementById('admin-sickness-dropzone');
+    const fileInput = document.getElementById('admin-sickness-pdf');
+    dropzone.onclick = () => fileInput.click();
+    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.style.background = '#fffbeb'; };
+    dropzone.ondragleave = () => { dropzone.style.background = '#fff8e1'; };
+    dropzone.ondrop = (e) => {
+        e.preventDefault();
+        dropzone.style.background = '#fff8e1';
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+        }
+    };
+}
+
+function hideAdminSicknessForm() {
+    const modal = document.getElementById('admin-sickness-modal');
+    modal.style.display = 'none';
+    const form = document.getElementById('admin-sickness-form');
+    if (form) form.reset();
+}
+
+// Submission handler for admin sickness
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('admin-sickness-form');
+    if (!form) return;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const userId = parseInt(document.getElementById('admin-sickness-user').value);
+        const start = document.getElementById('admin-sickness-start').value;
+        const end = document.getElementById('admin-sickness-end').value;
+        const desc = document.getElementById('admin-sickness-description').value;
+        const pdf = document.getElementById('admin-sickness-pdf').files[0];
+        if (!userId) return showAlert('Sélectionnez un utilisateur', 'error');
+        if (!start || !end) return showAlert('Dates requises', 'error');
+        if (new Date(start) > new Date(end)) return showAlert('La date de fin doit être postérieure', 'error');
+        if (!pdf) return showAlert('Sélectionnez un PDF', 'error');
+        if (pdf.type !== 'application/pdf') return showAlert('PDF uniquement', 'error');
+        if (pdf.size > 10 * 1024 * 1024) return showAlert('PDF > 10MB', 'error');
+
+        const fd = new FormData();
+        fd.append('user_id', String(userId));
+        fd.append('start_date', start);
+        fd.append('end_date', end);
+        if (desc) fd.append('description', desc);
+        fd.append('pdf_file', pdf);
+
+        try {
+            await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/admin`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` },
+                body: fd
+            }).then(async r => { if (!r.ok) throw new Error((await r.json()).detail || 'Erreur'); });
+            showAlert("Arrêt maladie créé et email envoyé.", 'success');
+            hideAdminSicknessForm();
+            if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
+        } catch (err) {
+            showAlert(err.message, 'error');
+        }
+    });
+});
+
+// Expose
+window.showAdminSicknessForm = showAdminSicknessForm;
+window.hideAdminSicknessForm = hideAdminSicknessForm;
 // Fermer la modal en cliquant à l'extérieur
 document.addEventListener('DOMContentLoaded', function() {
     const adminAbsenceModal = document.getElementById('admin-absence-modal');

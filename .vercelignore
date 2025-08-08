@@ -25,4 +25,5 @@ coverage.xml
 uploads/
 *.db
 *.sqlite
-*.sqlite3 
+*.sqlite3
+.env*

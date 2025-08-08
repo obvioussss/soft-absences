@@ -28,7 +28,6 @@ class Calendar {
         if (prevBtn) prevBtn.addEventListener('click', () => this.navigatePrevious());
         if (nextBtn) nextBtn.addEventListener('click', () => this.navigateNext());
         if (todayBtn) todayBtn.addEventListener('click', () => this.goToToday());
-        
 
     }
 
@@ -354,6 +353,8 @@ class Calendar {
 
         document.getElementById('event-modal').style.display = 'flex';
     }
+
+    
 
     showMultipleEventsModal(events, date) {
         // Pour simplifier, on affiche juste le premier événement

@@ -48,11 +48,7 @@ function formatDateForInput(dateString) {
     return date.toISOString().slice(0, 10); // Format YYYY-MM-DD pour input type="date"
 }
 
-// Fonction pour ouvrir l'administration Google Calendar
-function openGoogleCalendarAdmin() {
-    // Ouvrir dans un nouvel onglet
-    window.open('/static/templates/google-calendar-admin.html', '_blank');
-}
+// Google Calendar supprimé
 
 // Utilitaires de navigation
 function showTab(tabName) {
@@ -199,42 +195,62 @@ async function loadUserRequests() {
     
     try {
         requestsListDiv.innerHTML = '<div class="loading">Chargement...</div>';
-        const requests = await apiCall('/absence-requests/');
-        
-        if (requests.length === 0) {
-            requestsListDiv.innerHTML = '<p>Aucune demande d\'absence.</p>';
+        const [requests, sickness] = await Promise.all([
+            apiCall('/absence-requests/'),
+            apiCall('/sickness-declarations/')
+        ]);
+
+        if ((requests.length + sickness.length) === 0) {
+            requestsListDiv.innerHTML = '<p>Aucune demande ou déclaration.</p>';
             return;
         }
-        
-        let html = '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Raison</th><th>Créée le</th></tr></thead><tbody>';
-        
+
+        let html = '<h4>Vacances et Maladies</h4>';
+        html += '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Détails</th><th>Créée le</th></tr></thead><tbody>';
+
+        // Demandes d'absence (vacances/maladie déclarées via demandes)
         requests.forEach(request => {
             const startDate = formatDateSafe(request.start_date);
             const endDate = formatDateSafe(request.end_date);
             const createdDate = formatDateSafe(request.created_at);
-            
             const statusText = {
                 'en_attente': 'En attente',
                 'approuve': 'Approuvé',
                 'refuse': 'Refusé'
             }[request.status] || request.status;
-            
             const typeText = request.type === 'vacances' ? 'Vacances' : 'Maladie';
-            
             html += `
                 <tr>
                     <td><span class="status-badge event-${request.type}">${typeText}</span></td>
                     <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
                     <td><span class="status-badge status-${request.status}">${statusText}</span></td>
-                    <td>${request.reason || 'Non spécifiée'}</td>
+                    <td>${request.reason || '—'}</td>
                     <td>${createdDate}</td>
                 </tr>
             `;
         });
-        
+
+        // Déclarations de maladie (avec PDF)
+        sickness.forEach(decl => {
+            const startDate = formatDateSafe(decl.start_date);
+            const endDate = formatDateSafe(decl.end_date);
+            const createdDate = formatDateSafe(decl.created_at);
+            const emailBadge = decl.email_sent ? '<span class="status-badge status-approuve">Email envoyé</span>' : '<span class="status-badge status-refuse">Email non envoyé</span>';
+            const pdfCol = decl.pdf_filename ? `✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${decl.id}/pdf" target="_blank" rel="noopener">${decl.pdf_filename}</a>` : '❌ Aucun PDF';
+            html += `
+                <tr>
+                    <td><span class="status-badge event-maladie">Maladie</span></td>
+                    <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
+                    <td><span class="status-badge status-approuve">Enregistrée</span></td>
+                    <td>${decl.description ? `<em>"${decl.description}"</em>` : '—'}<br>${pdfCol}<br>${emailBadge}</td>
+                    <td>${createdDate}</td>
+                </tr>
+            `;
+        });
+
         html += '</tbody></table>';
         requestsListDiv.innerHTML = html;
-        
+
     } catch (error) {
         requestsListDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
     }

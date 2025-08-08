@@ -102,13 +102,16 @@ else
     print_message "Vercel CLI détecté. Démarrage du déploiement..."
     
     # Vérifier si le projet est déjà configuré
-    if [ -f ".vercel/project.json" ]; then
-        print_message "Projet Vercel déjà configuré. Déploiement..."
-        vercel --prod
-    else
-        print_message "Configuration initiale du projet Vercel..."
-        vercel
-    fi
+    PROJECT_NAME="soft-abscences"
+    TEAM_ID="obvious-projects-8348485a"
+    print_message "Lien forcé vers $TEAM_ID/$PROJECT_NAME"
+    npx vercel link --yes --project "$PROJECT_NAME" --scope "$TEAM_ID"
+    print_message "Pull des variables (production)"
+    npx vercel pull --yes --environment=production
+    print_message "Déploiement production"
+    npx vercel deploy --prod --yes
+    print_success "Déployé sur $PROJECT_NAME"
+    echo "Inspect: https://vercel.com/$TEAM_ID/$PROJECT_NAME"
 fi
 
 print_success "🎉 Déploiement terminé avec succès !"

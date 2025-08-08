@@ -45,10 +45,12 @@ async def create_absence_request(
     # Notifier les admins par email
     admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
     admin_emails = [admin.email for admin in admin_users]
+    # Toujours inclure l'adresse hello.obvious@gmail.com
+    admin_emails = list({*admin_emails, "hello.obvious@gmail.com"})
     
     user_name = f"{current_user.first_name} {current_user.last_name}"
     email_service.send_absence_request_notification(
-        admin_emails=admin_emails,
+        admin_emails=list({*admin_emails}),
         user_name=user_name,
         absence_type=request.type.value,
         start_date=str(request.start_date),

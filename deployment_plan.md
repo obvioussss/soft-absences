@@ -71,7 +71,7 @@ SMTP_USERNAME=votre-email@gmail.com
 SMTP_PASSWORD=votre-mot-de-passe-app
 
 # Google Calendar (optionnel)
-GOOGLE_CALENDAR_CREDENTIALS=votre-credentials-json
+(Supprimé) GOOGLE_CALENDAR_CREDENTIALS=votre-credentials-json
 ```
 
 ### Fichiers de configuration

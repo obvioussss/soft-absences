@@ -54,7 +54,7 @@ def get_static_content(file_path):
                 <button class="nav-tab user-only" onclick="showTab('procedure')">Mes Demandes</button>
                 <button class="nav-tab admin-only" onclick="showTab('admin-users')" style="display: none;">Utilisateurs</button>
                 <button class="nav-tab admin-only" onclick="showTab('admin-requests')" style="display: none;">📋 Demandes</button>
-                <button class="nav-tab admin-only" onclick="openGoogleCalendarAdmin()" style="display: none;">Google Calendar</button>
+                
                 <button class="nav-tab" onclick="logout()">Déconnexion</button>
             </div>
             
@@ -87,6 +87,7 @@ def get_static_content(file_path):
                         <div class="calendar-actions">
                             <button id="today-btn" class="btn btn-secondary">Aujourd'hui</button>
                             <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter absence</button>
+                             <button id="admin-add-sickness-btn" class="btn btn-warning admin-only" onclick="showAdminSicknessForm()" style="display: none;">🏥 Ajouter arrêt maladie (PDF)</button>
                             <div id="calendar-summary" class="calendar-summary" style="display: none;">
                                 <span id="summary-text"></span>
                             </div>
@@ -183,10 +184,6 @@ def get_static_content(file_path):
                                         <input type="date" id="admin-end-date" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="admin-reason">Raison (optionnel) :</label>
-                                        <textarea id="admin-reason" placeholder="Motif de l'absence..."></textarea>
-                                    </div>
-                                    <div class="form-group">
                                         <label for="admin-comment">Commentaire admin (optionnel) :</label>
                                         <textarea id="admin-comment" placeholder="Commentaire pour l'utilisateur..."></textarea>
                                     </div>
@@ -194,6 +191,50 @@ def get_static_content(file_path):
                                         <button type="button" class="btn" onclick="hideAdminAbsenceForm()">Annuler</button>
                                         <button type="submit" class="btn btn-success">Créer l'absence</button>
                                     </div>
+                    
+                    <!-- Formulaire admin pour créer une déclaration de maladie avec PDF -->
+                    <div id="admin-sickness-modal" class="modal" style="display: none;">
+                        <div class="modal-content" style="max-width: 600px;">
+                            <div class="modal-header">
+                                <h3 style="color: #856404; margin: 0;">🏥 Créer un arrêt maladie (Admin)</h3>
+                                <button class="modal-close" onclick="hideAdminSicknessForm()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="admin-sickness-form" enctype="multipart/form-data">
+                                    <div class="form-group">
+                                        <label for="admin-sickness-user">Utilisateur :</label>
+                                        <select id="admin-sickness-user" required>
+                                            <option value="">Sélectionner un utilisateur...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-sickness-start">Date de début :</label>
+                                        <input type="date" id="admin-sickness-start" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-sickness-end">Date de fin :</label>
+                                        <input type="date" id="admin-sickness-end" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-sickness-description">Description (optionnel) :</label>
+                                        <textarea id="admin-sickness-description" placeholder="Détails (optionnel)..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Certificat médical (PDF) :</label>
+                                        <div id="admin-sickness-dropzone" style="border: 2px dashed #ffc107; padding: 20px; border-radius: 8px; background: #fff8e1; text-align: center; cursor: pointer;">
+                                            Glissez-déposez le PDF ici, ou cliquez pour sélectionner.
+                                            <input type="file" id="admin-sickness-pdf" accept=".pdf" style="display:none;" required>
+                                        </div>
+                                        <small style="display:block; color:#856404; margin-top:6px;">PDF uniquement, 10MB max</small>
+                                    </div>
+                                    <div style="text-align: right; margin-top: 20px;">
+                                        <button type="button" class="btn" onclick="hideAdminSicknessForm()">Annuler</button>
+                                        <button type="submit" class="btn btn-warning">Créer l'arrêt maladie</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                                 </form>
                             </div>
                         </div>
@@ -1162,9 +1203,18 @@ const CONFIG = {
     DATE_INPUT_FORMAT: 'YYYY-MM-DD'
 };
 
-// Variables globales
+// Variables globales (avec restauration depuis le stockage)
 let currentUser = null;
 let authToken = null;
+
+try {
+    const storedToken = localStorage.getItem('authToken');
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedToken) authToken = storedToken;
+    if (storedUser) currentUser = JSON.parse(storedUser);
+} catch (e) {
+    // stockage indisponible ou corrompu
+}
 
 // Export pour utilisation dans d'autres fichiers
 window.CONFIG = CONFIG;
@@ -1194,9 +1244,21 @@ async function login(email, password) {
         
         const data = await response.json();
         authToken = data.access_token;
+        // Persister le token pour les rechargements
+        try {
+            localStorage.setItem('authToken', authToken);
+        } catch (e) {
+            console.warn('Impossible de stocker le token', e);
+        }
         
         // Récupérer les infos utilisateur
         currentUser = await apiCall('/users/me');
+        // Persister l'utilisateur courant
+        try {
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        } catch (e) {
+            console.warn('Impossible de stocker les infos utilisateur', e);
+        }
         
         showMainContent();
         showAlert('Connexion réussie !');
@@ -1210,7 +1272,12 @@ function logout() {
     authToken = null;
     currentUser = null;
     // Nettoyer le localStorage au cas où
-    localStorage.clear();
+    try {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+    } catch (e) {
+        // ignore
+    }
     sessionStorage.clear();
     
     // Cacher tous les onglets admin
@@ -1311,10 +1378,7 @@ async function loadDashboard() {
                         <h5 style="color: #27ae60; margin-bottom: 10px;">📅 Calendrier</h5>
                         <p style="color: #666; font-size: 14px;">Vue d'ensemble des absences</p>
                     </div>
-                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e74c3c; cursor: pointer;" onclick="openGoogleCalendarAdmin()">
-                        <h5 style="color: #e74c3c; margin-bottom: 10px;">📧 Google Calendar</h5>
-                        <p style="color: #666; font-size: 14px;">Synchronisation automatique</p>
-                    </div>
+                    
                 </div>
             </div>
         `;
@@ -1411,7 +1475,6 @@ class Calendar {
         if (prevBtn) prevBtn.addEventListener('click', () => this.navigatePrevious());
         if (nextBtn) nextBtn.addEventListener('click', () => this.navigateNext());
         if (todayBtn) todayBtn.addEventListener('click', () => this.goToToday());
-        
 
     }
 
@@ -1738,6 +1801,8 @@ class Calendar {
         document.getElementById('event-modal').style.display = 'flex';
     }
 
+    
+
     showMultipleEventsModal(events, date) {
         // Pour simplifier, on affiche juste le premier événement
         // Dans une vraie app, on pourrait créer une modal spéciale pour plusieurs événements
@@ -1871,9 +1936,9 @@ async function loadAllRequests() {
         html += '<table class="table"><thead><tr><th>👤 Utilisateur</th><th>📅 Période</th><th>📝 Raison</th><th>📊 Statut</th><th>🕐 Créée le</th><th>⚡ Actions</th></tr></thead><tbody>';
         
         requests.forEach(request => {
-            const startDate = new Date(request.start_date).toLocaleDateString('fr-FR');
-            const endDate = new Date(request.end_date).toLocaleDateString('fr-FR');
-            const createdDate = new Date(request.created_at).toLocaleDateString('fr-FR');
+            const startDate = formatDateSafe(request.start_date);
+            const endDate = formatDateSafe(request.end_date);
+            const createdDate = formatDateSafe(request.created_at);
             
             // Style de la ligne selon le statut
             let rowStyle = '';
@@ -1892,9 +1957,10 @@ async function loadAllRequests() {
                 actions = '<span style="color: #666;">—</span>';
             }
             
+            const userDisplay = request.user ? `<strong>${request.user.first_name} ${request.user.last_name}</strong><br><small style="color: #666;">${request.user.email}</small>` : '<span style="color:#e74c3c">Utilisateur inconnu</span>';
             html += `
                 <tr style="${rowStyle}">
-                    <td><strong>${request.user.first_name} ${request.user.last_name}</strong><br><small style="color: #666;">${request.user.email}</small></td>
+                    <td>${userDisplay}</td>
                     <td><strong>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</strong></td>
                     <td>${request.reason ? `<em>"${request.reason}"</em>` : '<span style="color: #999;">Non spécifiée</span>'}</td>
                     <td><span class="status-badge status-${request.status}">${request.status.replace('_', ' ')}</span></td>
@@ -1952,6 +2018,94 @@ function hideAdminAbsenceForm() {
     document.getElementById('admin-absence-form-element').reset();
 }
 
+// Admin Sickness modal controls
+function showAdminSicknessForm() {
+    const modal = document.getElementById('admin-sickness-modal');
+    modal.style.display = 'flex';
+    (async () => {
+        try {
+            const users = await apiCall('/users/');
+            const userSelect = document.getElementById('admin-sickness-user');
+            userSelect.innerHTML = '<option value="">Sélectionner un utilisateur...</option>';
+            users.forEach(user => {
+                if (user.role !== 'admin') {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.first_name} ${user.last_name} (${user.email})`;
+                    userSelect.appendChild(option);
+                }
+            });
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('admin-sickness-start').value = today;
+            document.getElementById('admin-sickness-end').value = today;
+        } catch (e) { showAlert('Erreur chargement utilisateurs: ' + e.message, 'error'); }
+    })();
+
+    // Dropzone click/drag
+    const dropzone = document.getElementById('admin-sickness-dropzone');
+    const fileInput = document.getElementById('admin-sickness-pdf');
+    dropzone.onclick = () => fileInput.click();
+    dropzone.ondragover = (e) => { e.preventDefault(); dropzone.style.background = '#fffbeb'; };
+    dropzone.ondragleave = () => { dropzone.style.background = '#fff8e1'; };
+    dropzone.ondrop = (e) => {
+        e.preventDefault();
+        dropzone.style.background = '#fff8e1';
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+        }
+    };
+}
+
+function hideAdminSicknessForm() {
+    const modal = document.getElementById('admin-sickness-modal');
+    modal.style.display = 'none';
+    const form = document.getElementById('admin-sickness-form');
+    if (form) form.reset();
+}
+
+// Submission handler for admin sickness
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('admin-sickness-form');
+    if (!form) return;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const userId = parseInt(document.getElementById('admin-sickness-user').value);
+        const start = document.getElementById('admin-sickness-start').value;
+        const end = document.getElementById('admin-sickness-end').value;
+        const desc = document.getElementById('admin-sickness-description').value;
+        const pdf = document.getElementById('admin-sickness-pdf').files[0];
+        if (!userId) return showAlert('Sélectionnez un utilisateur', 'error');
+        if (!start || !end) return showAlert('Dates requises', 'error');
+        if (new Date(start) > new Date(end)) return showAlert('La date de fin doit être postérieure', 'error');
+        if (!pdf) return showAlert('Sélectionnez un PDF', 'error');
+        if (pdf.type !== 'application/pdf') return showAlert('PDF uniquement', 'error');
+        if (pdf.size > 10 * 1024 * 1024) return showAlert('PDF > 10MB', 'error');
+
+        const fd = new FormData();
+        fd.append('user_id', String(userId));
+        fd.append('start_date', start);
+        fd.append('end_date', end);
+        if (desc) fd.append('description', desc);
+        fd.append('pdf_file', pdf);
+
+        try {
+            await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/admin`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}` },
+                body: fd
+            }).then(async r => { if (!r.ok) throw new Error((await r.json()).detail || 'Erreur'); });
+            showAlert("Arrêt maladie créé et email envoyé.", 'success');
+            hideAdminSicknessForm();
+            if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
+        } catch (err) {
+            showAlert(err.message, 'error');
+        }
+    });
+});
+
+// Expose
+window.showAdminSicknessForm = showAdminSicknessForm;
+window.hideAdminSicknessForm = hideAdminSicknessForm;
 // Fermer la modal en cliquant à l'extérieur
 document.addEventListener('DOMContentLoaded', function() {
     const adminAbsenceModal = document.getElementById('admin-absence-modal');
@@ -2300,9 +2454,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(errorData.detail || 'Erreur lors de l\'envoi de la déclaration');
                 }
                 
-                const result = await response.json();
+                 const result = await response.json();
                 
-                showAlert('Déclaration de maladie envoyée avec succès ! Un email a été envoyé à hello.obvious@gmail.com', 'success');
+                showAlert('Déclaration de maladie envoyée avec succès ! Email envoyé aux administrateurs.', 'success');
                 hideSicknessDeclarationForm();
                 
                 // Recharger la liste des demandes si on est sur l'onglet procédure
@@ -2339,11 +2493,16 @@ async function loadSicknessDeclarations() {
                 const endDate = new Date(declaration.end_date).toLocaleDateString('fr-FR');
                 const createdDate = new Date(declaration.created_at).toLocaleDateString('fr-FR');
                 
+                const pdfCell = declaration.pdf_filename ? `
+                    ✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf" target="_blank" rel="noopener">${declaration.pdf_filename}</a>
+                    <button class="btn btn-sm" onclick="previewPdf(${declaration.id})">👁️ Voir</button>
+                ` : '❌ Aucun fichier';
+                
                 html += `
                     <tr>
                         <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
                         <td>${declaration.description || 'Non spécifiée'}</td>
-                        <td>${declaration.pdf_filename ? `✅ ${declaration.pdf_filename}` : '❌ Aucun fichier'}</td>
+                        <td>${pdfCell}</td>
                         <td><span class="status-badge ${declaration.email_sent ? 'status-approuve' : 'status-refuse'}">${declaration.email_sent ? 'Envoyé' : 'Non envoyé'}</span></td>
                         <td>${createdDate}</td>
                     </tr>
@@ -2357,6 +2516,17 @@ async function loadSicknessDeclarations() {
         
     } catch (error) {
         return `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Prévisualisation PDF dans une popup (modal simple)
+function previewPdf(declarationId) {
+    const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${declarationId}/pdf`;
+    // Ouvre dans un nouvel onglet si le navigateur bloque les modales
+    const w = window.open(url, '_blank');
+    if (!w) {
+        // fallback si popups bloquées
+        window.location.href = url;
     }
 }
 
@@ -2516,16 +2686,38 @@ function formatDate(dateString) {
     return date.toLocaleDateString(CONFIG.DATE_FORMAT);
 }
 
+// Formatage robuste inter-navigateurs (notamment Safari) pour les dates ISO
+function formatDateSafe(value) {
+    if (!value) return '—';
+    let candidate = value;
+    if (typeof candidate === 'string') {
+        // Remplacer l'espace par un T si nécessaire
+        if (candidate.includes(' ') && !candidate.includes('T')) {
+            candidate = candidate.replace(' ', 'T');
+        }
+        // Supprimer les microsecondes si présentes (Safari peut échouer)
+        // Ex: 2025-08-11T12:34:56.123456 -> 2025-08-11T12:34:56
+        candidate = candidate.replace(/(\.\d{3,})/, '');
+    }
+    let d = new Date(candidate);
+    if (isNaN(d)) {
+        // Fallback: garder uniquement la partie date
+        const datePart = String(value).split('T')[0] || String(value).split(' ')[0];
+        if (datePart) {
+            const d2 = new Date(datePart);
+            if (!isNaN(d2)) return d2.toLocaleDateString(CONFIG.DATE_FORMAT);
+        }
+        return '—';
+    }
+    return d.toLocaleDateString(CONFIG.DATE_FORMAT);
+}
+
 function formatDateForInput(dateString) {
     const date = new Date(dateString);
     return date.toISOString().slice(0, 10); // Format YYYY-MM-DD pour input type="date"
 }
 
-// Fonction pour ouvrir l'administration Google Calendar
-function openGoogleCalendarAdmin() {
-    // Ouvrir dans un nouvel onglet
-    window.open('/static/templates/google-calendar-admin.html', '_blank');
-}
+// Google Calendar supprimé
 
 // Utilitaires de navigation
 function showTab(tabName) {
@@ -2539,8 +2731,14 @@ function showTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // Activer l'onglet cliqué
-    event.target.classList.add('active');
+    // Activer l'onglet correspondant au tabName (sans dépendre de event)
+    const navTabs = document.querySelectorAll('.nav-tab');
+    navTabs.forEach(tab => {
+        const onclickAttr = tab.getAttribute('onclick') || '';
+        if (onclickAttr.includes(`showTab('${tabName}')`) || onclickAttr.includes(`showTab(\"${tabName}\")`)) {
+            tab.classList.add('active');
+        }
+    });
     
     // Afficher le contenu correspondant
     const content = document.getElementById(tabName);
@@ -2582,8 +2780,14 @@ function showSubTab(subTabName) {
         tab.classList.remove('active');
     });
     
-    // Activer le sous-onglet cliqué
-    event.target.classList.add('active');
+    // Activer le sous-onglet correspondant (sans dépendre de event)
+    const subTabs = document.querySelectorAll('.sub-tab');
+    subTabs.forEach(tab => {
+        const onclickAttr = tab.getAttribute('onclick') || '';
+        if (onclickAttr.includes(`showSubTab('${subTabName}')`) || onclickAttr.includes(`showSubTab(\"${subTabName}\")`)) {
+            tab.classList.add('active');
+        }
+    });
     
     // Afficher le contenu correspondant
     const content = document.getElementById(subTabName);
@@ -2660,42 +2864,62 @@ async function loadUserRequests() {
     
     try {
         requestsListDiv.innerHTML = '<div class="loading">Chargement...</div>';
-        const requests = await apiCall('/absence-requests/');
-        
-        if (requests.length === 0) {
-            requestsListDiv.innerHTML = '<p>Aucune demande d\'absence.</p>';
+        const [requests, sickness] = await Promise.all([
+            apiCall('/absence-requests/'),
+            apiCall('/sickness-declarations/')
+        ]);
+
+        if ((requests.length + sickness.length) === 0) {
+            requestsListDiv.innerHTML = '<p>Aucune demande ou déclaration.</p>';
             return;
         }
-        
-        let html = '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Raison</th><th>Créée le</th></tr></thead><tbody>';
-        
+
+        let html = '<h4>Vacances et Maladies</h4>';
+        html += '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Détails</th><th>Créée le</th></tr></thead><tbody>';
+
+        // Demandes d'absence (vacances/maladie déclarées via demandes)
         requests.forEach(request => {
-            const startDate = new Date(request.start_date).toLocaleDateString('fr-FR');
-            const endDate = new Date(request.end_date).toLocaleDateString('fr-FR');
-            const createdDate = new Date(request.created_at).toLocaleDateString('fr-FR');
-            
+            const startDate = formatDateSafe(request.start_date);
+            const endDate = formatDateSafe(request.end_date);
+            const createdDate = formatDateSafe(request.created_at);
             const statusText = {
                 'en_attente': 'En attente',
                 'approuve': 'Approuvé',
                 'refuse': 'Refusé'
             }[request.status] || request.status;
-            
             const typeText = request.type === 'vacances' ? 'Vacances' : 'Maladie';
-            
             html += `
                 <tr>
                     <td><span class="status-badge event-${request.type}">${typeText}</span></td>
                     <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
                     <td><span class="status-badge status-${request.status}">${statusText}</span></td>
-                    <td>${request.reason || 'Non spécifiée'}</td>
+                    <td>${request.reason || '—'}</td>
                     <td>${createdDate}</td>
                 </tr>
             `;
         });
-        
+
+        // Déclarations de maladie (avec PDF)
+        sickness.forEach(decl => {
+            const startDate = formatDateSafe(decl.start_date);
+            const endDate = formatDateSafe(decl.end_date);
+            const createdDate = formatDateSafe(decl.created_at);
+            const emailBadge = decl.email_sent ? '<span class="status-badge status-approuve">Email envoyé</span>' : '<span class="status-badge status-refuse">Email non envoyé</span>';
+            const pdfCol = decl.pdf_filename ? `✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${decl.id}/pdf" target="_blank" rel="noopener">${decl.pdf_filename}</a>` : '❌ Aucun PDF';
+            html += `
+                <tr>
+                    <td><span class="status-badge event-maladie">Maladie</span></td>
+                    <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
+                    <td><span class="status-badge status-approuve">Enregistrée</span></td>
+                    <td>${decl.description ? `<em>"${decl.description}"</em>` : '—'}<br>${pdfCol}<br>${emailBadge}</td>
+                    <td>${createdDate}</td>
+                </tr>
+            `;
+        });
+
         html += '</tbody></table>';
         requestsListDiv.innerHTML = html;
-        
+
     } catch (error) {
         requestsListDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
     }
@@ -2720,6 +2944,34 @@ async function loadCalendar() {
         '/static/js/main.js': {
             'content': '''// Event Listeners et initialisation
 document.addEventListener('DOMContentLoaded', function() {
+    // Restauration de session si disponible
+    (async () => {
+        const hasToken = !!window.authToken;
+        const hasUser = !!window.currentUser;
+        if (hasToken) {
+            authToken = window.authToken;
+        }
+        if (hasUser) {
+            currentUser = window.currentUser;
+        } else if (hasToken) {
+            // Tenter de récupérer l'utilisateur courant si seulement le token est présent
+            try {
+                currentUser = await apiCall('/users/me');
+                try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch {}
+                window.currentUser = currentUser;
+            } catch (e) {
+                // Token invalide/expiré
+                try { localStorage.removeItem('authToken'); localStorage.removeItem('currentUser'); } catch {}
+                authToken = null;
+            }
+        }
+        if (authToken && currentUser) {
+            showMainContent();
+        } else {
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    })();
     // Formulaire de connexion
     document.getElementById('login-form').addEventListener('submit', function(e) {
         e.preventDefault();

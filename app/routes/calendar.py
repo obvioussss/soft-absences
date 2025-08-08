@@ -276,3 +276,45 @@ async def get_calendar_summary(
         "used_leave_days": used_days,
         "remaining_leave_days": remaining_days
     }
+
+@router.get("/summary/user/{user_id}")
+async def get_calendar_summary_for_user(
+    user_id: int,
+    year: int = Query(..., description="Année pour le résumé"),
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Résumé des congés pour un utilisateur spécifique (admin)."""
+    # Calculer les jours utilisés dans l'année pour l'utilisateur ciblé
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+    approved_requests = db.query(models.AbsenceRequest).filter(
+        and_(
+            models.AbsenceRequest.user_id == user_id,
+            models.AbsenceRequest.status == models.AbsenceStatus.APPROUVE,
+            models.AbsenceRequest.type == models.AbsenceType.VACANCES,
+            models.AbsenceRequest.start_date <= end_date,
+            models.AbsenceRequest.end_date >= start_date
+        )
+    ).all()
+
+    used_days = 0
+    for request in approved_requests:
+        request_start = max(request.start_date, start_date)
+        request_end = min(request.end_date, end_date)
+        days_count = (request_end - request_start).days + 1
+        used_days += days_count
+
+    remaining_days = max(0, user.annual_leave_days - used_days)
+
+    return {
+        "year": year,
+        "total_leave_days": user.annual_leave_days,
+        "used_leave_days": used_days,
+        "remaining_leave_days": remaining_days
+    }

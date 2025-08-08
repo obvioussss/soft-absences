@@ -26,10 +26,7 @@ async function loadDashboard() {
                         <h5 style="color: #27ae60; margin-bottom: 10px;">📅 Calendrier</h5>
                         <p style="color: #666; font-size: 14px;">Vue d'ensemble des absences</p>
                     </div>
-                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; border: 2px solid #e74c3c; cursor: pointer;" onclick="openGoogleCalendarAdmin()">
-                        <h5 style="color: #e74c3c; margin-bottom: 10px;">📧 Google Calendar</h5>
-                        <p style="color: #666; font-size: 14px;">Synchronisation automatique</p>
-                    </div>
+                    
                 </div>
             </div>
         `;

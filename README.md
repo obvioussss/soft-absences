@@ -69,7 +69,6 @@ soft_abscences/
 │   │   ├── auth.py
 │   │   ├── calendar.py
 │   │   ├── dashboard.py
-│   │   ├── google_calendar.py
 │   │   ├── sickness_declarations.py
 │   │   └── users.py
 │   ├── __init__.py
@@ -77,7 +76,7 @@ soft_abscences/
 │   ├── database.py        # Configuration base de données
 │   ├── email_service.py   # Service d'envoi d'emails
 │   ├── file_service.py    # Gestion des fichiers
-│   ├── google_calendar_service.py  # Intégration Google Calendar
+│   ├── (supprimé) google_calendar_service.py
 │   ├── main.py           # Point d'entrée FastAPI
 │   ├── models.py         # Modèles SQLAlchemy
 │   └── schemas.py        # Schémas Pydantic
@@ -193,7 +192,7 @@ RESEND_API_KEY=votre-clé-resend
 RESEND_FROM_EMAIL=noreply@votre-domaine.com
 
 # Google Calendar
-GOOGLE_CALENDAR_CREDENTIALS={"type":"service_account",...}
+(Supprimé) GOOGLE_CALENDAR_CREDENTIALS={"type":"service_account",...}
 
 # CORS
 CORS_ORIGINS=http://localhost:3000,https://votre-domaine.com

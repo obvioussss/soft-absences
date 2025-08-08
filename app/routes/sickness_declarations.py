@@ -9,6 +9,65 @@ from app.file_service import file_service
 
 router = APIRouter()
 
+@router.post("/admin", response_model=schemas.SicknessDeclaration)
+async def create_sickness_declaration_admin(
+    user_id: int = Form(...),
+    start_date: str = Form(...),
+    end_date: str = Form(...),
+    description: Optional[str] = Form(None),
+    pdf_file: UploadFile = File(...),
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Créer une déclaration de maladie pour un utilisateur (admin) avec PDF et envoi d'email au user."""
+    from datetime import date
+    try:
+        start_date_obj = date.fromisoformat(start_date)
+        end_date_obj = date.fromisoformat(end_date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Format de date invalide (YYYY-MM-DD)")
+    if start_date_obj > end_date_obj:
+        raise HTTPException(status_code=400, detail="La date de fin doit être postérieure à la date de début")
+
+    # Vérifier l'utilisateur cible
+    target_user = crud.get_user(db, user_id=user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+
+    declaration_data = schemas.SicknessDeclarationCreate(
+        start_date=start_date_obj,
+        end_date=end_date_obj,
+        description=description
+    )
+    db_declaration = crud.create_sickness_declaration(db=db, declaration=declaration_data, user_id=user_id)
+
+    try:
+        original_filename, file_path = await file_service.save_pdf(pdf_file)
+        crud.update_sickness_declaration_file(db, db_declaration.id, original_filename, file_path)
+
+        # Envoi email au user (et en copie aux admins)
+        admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+        admin_emails = [admin.email for admin in admin_users] or ["hello.obvious@gmail.com"]
+        recipients = list({target_user.email, *admin_emails})
+
+        email_sent = email_service.send_sickness_declaration_email(
+            user_name=f"{target_user.first_name} {target_user.last_name}",
+            to_emails=recipients,
+            start_date=str(start_date_obj),
+            end_date=str(end_date_obj),
+            description=description,
+            pdf_path=file_path
+        )
+        if email_sent:
+            crud.mark_sickness_declaration_email_sent(db, db_declaration.id)
+        db.refresh(db_declaration)
+    except Exception as e:
+        db.delete(db_declaration)
+        db.commit()
+        raise HTTPException(status_code=400, detail=f"Erreur lors de l'upload du fichier: {str(e)}")
+
+    return db_declaration
+
 @router.get("/", response_model=list[schemas.SicknessDeclaration])
 async def read_sickness_declarations(
     skip: int = 0,
@@ -213,8 +272,6 @@ async def resend_declaration_email(
     
     try:
         # Renvoyer l'email
-        from app.email_service import EmailService
-        email_service = EmailService()
         email_sent = email_service.send_sickness_declaration_email(
             user_name=f"{declaration.user.first_name} {declaration.user.last_name}",
             start_date=declaration.start_date,

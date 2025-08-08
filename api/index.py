@@ -8,6 +8,9 @@ from datetime import datetime, timedelta, timezone
 import base64
 import io
 import importlib.util
+import uuid
+import mimetypes
+import requests
 
 # Ajouter le répertoire api au path pour les imports
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -68,6 +71,37 @@ if get_mime_type is None:
 # Configuration JWT simplifiée
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+RESEND_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", os.getenv("EMAIL_FROM", "noreply@example.com")).strip() or "noreply@example.com"
+DEFAULT_ADMIN_EMAIL = "hello.obvious@gmail.com"
+
+def send_email_resend(to_emails, subject, text, html=None, attachment_path=None, attachment_filename=None):
+    try:
+        if not RESEND_API_KEY:
+            return False
+        data = {
+            "from": RESEND_FROM_EMAIL,
+            "to": to_emails if isinstance(to_emails, list) else [to_emails],
+            "subject": subject,
+            "text": text,
+        }
+        if html:
+            data["html"] = html
+        if attachment_path and os.path.exists(attachment_path):
+            with open(attachment_path, 'rb') as f:
+                b64 = base64.b64encode(f.read()).decode('utf-8')
+            data["attachments"] = [{
+                "content": b64,
+                "filename": attachment_filename or os.path.basename(attachment_path)
+            }]
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+            json=data
+        )
+        return resp.status_code == 200
+    except Exception:
+        return False
 
 def json_serial(obj):
     """Helper pour sérialiser les objets datetime en JSON"""
@@ -277,8 +311,8 @@ def handle_absence_requests(current_user=None):
         cursor = conn.cursor()
         if current_user and current_user.get('role') != 'admin':
             cursor.execute('''
-                SELECT a.id, a.type, a.start_date, a.end_date, a.status, a.reason,
-                       u.first_name, u.last_name, u.email
+                SELECT a.id, a.type, a.start_date, a.end_date, a.status, a.reason, a.created_at,
+                       u.id, u.first_name, u.last_name, u.email
                 FROM absence_requests a
                 JOIN users u ON a.user_id = u.id
                 WHERE a.user_id = ?
@@ -286,8 +320,8 @@ def handle_absence_requests(current_user=None):
             ''', (current_user['id'],))
         else:
             cursor.execute('''
-                SELECT a.id, a.type, a.start_date, a.end_date, a.status, a.reason,
-                       u.first_name, u.last_name, u.email
+                SELECT a.id, a.type, a.start_date, a.end_date, a.status, a.reason, a.created_at,
+                       u.id, u.first_name, u.last_name, u.email
                 FROM absence_requests a
                 JOIN users u ON a.user_id = u.id
                 ORDER BY a.created_at DESC
@@ -297,15 +331,20 @@ def handle_absence_requests(current_user=None):
         
         return [
             {
-                "id": abs[0],
-                "type": (abs[1] or '').lower(),
-                "start_date": abs[2],
-                "end_date": abs[3],
-                "status": (abs[4] or '').lower(),
-                "reason": abs[5],
-                "user_name": f"{abs[6]} {abs[7]}",
-                "user_email": abs[8]
-            } for abs in absences
+                "id": row[0],
+                "type": (row[1] or '').lower(),
+                "start_date": row[2],
+                "end_date": row[3],
+                "status": (row[4] or '').lower(),
+                "reason": row[5],
+                "created_at": row[6],
+                "user": {
+                    "id": row[7],
+                    "first_name": row[8],
+                    "last_name": row[9],
+                    "email": row[10],
+                }
+            } for row in absences
         ]
     except Exception as e:
         return {
@@ -861,6 +900,25 @@ class handler(BaseHTTPRequestHandler):
                 or path.startswith('/sickness-declarations/')
                 or path.startswith('/absence-requests/')
             ):
+                # Délivrance PDF des déclarations: /sickness-declarations/{id}/pdf
+                if path.startswith('/sickness-declarations/') and path.endswith('/pdf'):
+                    try:
+                        seg = path.strip('/').split('/')
+                        decl_id = int(seg[1])
+                        conn = init_db(); cursor = conn.cursor()
+                        cursor.execute('SELECT pdf_path, pdf_filename, user_id FROM sickness_declarations WHERE id = ?', (decl_id,))
+                        row = cursor.fetchone(); conn.close()
+                        if not row or not row[0] or not os.path.exists(row[0]):
+                            self.send_response(404); self.end_headers(); return
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/pdf')
+                        self.send_header('Content-Disposition', f'inline; filename="{row[1] or "document.pdf"}"')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        with open(row[0], 'rb') as f: self.wfile.write(f.read())
+                        return
+                    except Exception:
+                        self.send_response(500); self.end_headers(); return
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
@@ -963,7 +1021,7 @@ class handler(BaseHTTPRequestHandler):
                 parsed = parse_qs(raw_body.decode('utf-8'))
                 data = {k: v[0] for k, v in parsed.items()}
 
-            # Support multipart/form-data pour OAuth2 FormData
+            # Support multipart/form-data pour formulaires
             elif content_type.startswith('multipart/form-data'):
                 import cgi
                 env = {
@@ -973,6 +1031,8 @@ class handler(BaseHTTPRequestHandler):
                 }
                 fs = cgi.FieldStorage(fp=io.BytesIO(raw_body), headers=self.headers, environ=env)
                 data = {key: fs.getvalue(key) for key in fs.keys()} if fs else {}
+                # Attacher l'objet FieldStorage complet pour accès au fichier si présent
+                data["__fs__"] = fs
 
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -1031,6 +1091,19 @@ class handler(BaseHTTPRequestHandler):
                             ''', (current_user['id'], abs_type, start_date, end_date, reason))
                             conn.commit()
                             new_id = cursor.lastrowid
+                            # Email aux admins + fallback
+                            cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                            admin_rows = cursor.fetchall() or []
+                            admin_emails = [r[0] for r in admin_rows]
+                            if DEFAULT_ADMIN_EMAIL not in admin_emails:
+                                admin_emails.append(DEFAULT_ADMIN_EMAIL)
+                            # Envoi email (meilleur effort)
+                            try:
+                                subject = f"Gestion des absences - Nouvelle demande - {current_user['first_name']} {current_user['last_name']}"
+                                body = f"Nouvelle demande {req.get('type')} du {start_date} au {end_date}.\nRaison: {reason or '—'}"
+                                send_email_resend(admin_emails, subject, body, f"<p>{body}</p>")
+                            except Exception:
+                                pass
                             conn.close()
                             response = {
                                 "id": new_id,
@@ -1059,10 +1132,26 @@ class handler(BaseHTTPRequestHandler):
                             cursor = conn.cursor()
                             cursor.execute('''
                                 INSERT INTO sickness_declarations (user_id, start_date, end_date, description, email_sent, viewed_by_admin)
-                                VALUES (?, ?, ?, ?, 1, 0)
+                                VALUES (?, ?, ?, ?, 0, 0)
                             ''', (current_user['id'], start_date, end_date, description))
                             conn.commit()
                             new_id = cursor.lastrowid
+                            # Envoi email (meilleur effort) à admins + user
+                            try:
+                                subject = f"Gestion des absences - Déclaration maladie - {current_user['first_name']} {current_user['last_name']}"
+                                body = f"Déclaration du {start_date} au {end_date}. Description: {description or '—'}"
+                                cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                                admin_rows = cursor.fetchall() or []
+                                recipients = [r[0] for r in admin_rows]
+                                if DEFAULT_ADMIN_EMAIL not in recipients:
+                                    recipients.append(DEFAULT_ADMIN_EMAIL)
+                                recipients.append(current_user['email'])
+                                ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>")
+                                if ok:
+                                    cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=?', (new_id,))
+                                    conn.commit()
+                            except Exception:
+                                pass
                             conn.close()
                             response = {
                                 "id": new_id,
@@ -1075,6 +1164,86 @@ class handler(BaseHTTPRequestHandler):
                             }
                         except Exception as e:
                             response = {"error": str(e)}
+            elif self.path.rstrip('/') == '/sickness-declarations/admin':
+                # Admin crée une déclaration de maladie avec PDF
+                current_user = get_user_from_auth_header(self.headers)
+                if not current_user or current_user.get('role') != 'admin':
+                    response = {"error": "Forbidden"}
+                else:
+                    # Exiger multipart
+                    fs = (data or {}).get("__fs__")
+                    try:
+                        user_id = int((data or {}).get('user_id') or 0)
+                    except Exception:
+                        user_id = 0
+                    start_date = (data or {}).get('start_date')
+                    end_date = (data or {}).get('end_date')
+                    description = (data or {}).get('description')
+                    if not fs or not user_id or not start_date or not end_date or 'pdf_file' not in fs:
+                        response = {"error": "Invalid payload"}
+                    else:
+                        try:
+                            pdf_field = fs['pdf_file']
+                            original_name = getattr(pdf_field, 'filename', 'document.pdf')
+                            # Sauvegarder dans /tmp/uploads/sickness_declarations
+                            base_dir = '/tmp/uploads/sickness_declarations'
+                            os.makedirs(base_dir, exist_ok=True)
+                            unique_name = f"{uuid.uuid4()}.pdf"
+                            file_path = os.path.join(base_dir, unique_name)
+                            with open(file_path, 'wb') as out:
+                                out.write(pdf_field.file.read())
+                            conn = init_db(); cursor = conn.cursor()
+                            cursor.execute('''
+                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
+                                VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+                            ''', (user_id, start_date, end_date, description, original_name, file_path))
+                            conn.commit(); new_id = cursor.lastrowid
+                            # Récupérer email user + admins
+                            cursor.execute('SELECT email, first_name, last_name FROM users WHERE id = ?', (user_id,))
+                            urow = cursor.fetchone() or (None, '', '')
+                            user_email = urow[0]
+                            cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                            admin_rows = cursor.fetchall() or []
+                            recipients = [r[0] for r in admin_rows]
+                            if DEFAULT_ADMIN_EMAIL not in recipients:
+                                recipients.append(DEFAULT_ADMIN_EMAIL)
+                            if user_email: recipients.append(user_email)
+                            subject = f"Gestion des absences - Arrêt maladie - {urow[1]} {urow[2]}"
+                            body = f"Arrêt maladie du {start_date} au {end_date}. Description: {description or '—'}"
+                            ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>", attachment_path=file_path, attachment_filename=original_name)
+                            if ok:
+                                cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=?', (new_id,))
+                                conn.commit()
+                            conn.close()
+                            response = {"id": new_id, "start_date": start_date, "end_date": end_date, "description": description, "email_sent": bool(ok), "pdf_filename": original_name}
+                        except Exception as e:
+                            response = {"error": str(e)}
+            elif self.path.startswith('/sickness-declarations/') and self.path.endswith('/mark-viewed'):
+                # Marquer comme vue et envoyer un email au user
+                try:
+                    decl_id = int(self.path.strip('/').split('/')[1])
+                except Exception:
+                    decl_id = 0
+                if decl_id <= 0:
+                    response = {"error": "Bad request"}
+                else:
+                    try:
+                        conn = init_db(); cursor = conn.cursor()
+                        cursor.execute('UPDATE sickness_declarations SET viewed_by_admin=1 WHERE id=?', (decl_id,))
+                        # Récupérer infos pour email
+                        cursor.execute('''
+                            SELECT s.start_date, s.end_date, u.email, u.first_name, u.last_name
+                            FROM sickness_declarations s JOIN users u ON s.user_id = u.id WHERE s.id = ?
+                        ''', (decl_id,))
+                        r = cursor.fetchone()
+                        conn.commit(); conn.close()
+                        if r:
+                            subject = f"Gestion des absences - Déclaration consultée"
+                            body = f"Votre déclaration du {r[0]} au {r[1]} a été consultée."
+                            send_email_resend([r[2]], subject, body, f"<p>{body}</p>")
+                        response = {"message": "Déclaration marquée comme vue et email envoyé"}
+                    except Exception as e:
+                        response = {"error": str(e)}
             elif self.path.startswith('/users'):
                 # Création utilisateur POST /users
                 if self.path.rstrip('/') == '/users':

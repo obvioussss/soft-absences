@@ -43,7 +43,6 @@ def _init_db_postgres(db_url: str):
                 status TEXT DEFAULT 'EN_ATTENTE',
                 approved_by_id INTEGER,
                 admin_comment TEXT,
-                google_calendar_event_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -135,7 +134,6 @@ def init_db():
             status TEXT DEFAULT 'EN_ATTENTE',
             approved_by_id INTEGER,
             admin_comment TEXT,
-            google_calendar_event_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)

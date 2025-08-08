@@ -69,7 +69,7 @@ SMTP_USERNAME=votre-email@gmail.com
 SMTP_PASSWORD=votre-mot-de-passe-app
 
 # Google Calendar
-GOOGLE_CALENDAR_CREDENTIALS=votre-credentials-json
+(Optionnel/supprimé) GOOGLE_CALENDAR_CREDENTIALS=votre-credentials-json
 
 # CORS
 CORS_ORIGINS=https://votre-domaine.com

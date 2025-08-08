@@ -43,7 +43,7 @@
                 <button class="nav-tab user-only" onclick="showTab('procedure')">Mes Demandes</button>
                 <button class="nav-tab admin-only" onclick="showTab('admin-users')" style="display: none;">Utilisateurs</button>
                 <button class="nav-tab admin-only" onclick="showTab('admin-requests')" style="display: none;">📋 Demandes</button>
-                <button class="nav-tab admin-only" onclick="openGoogleCalendarAdmin()" style="display: none;">Google Calendar</button>
+                
                 <button class="nav-tab" onclick="logout()">Déconnexion</button>
             </div>
             
@@ -76,6 +76,7 @@
                         <div class="calendar-actions">
                             <button id="today-btn" class="btn btn-secondary">Aujourd'hui</button>
                             <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter absence</button>
+                             <button id="admin-add-sickness-btn" class="btn btn-warning admin-only" onclick="showAdminSicknessForm()" style="display: none;">🏥 Ajouter arrêt maladie (PDF)</button>
                             <div id="calendar-summary" class="calendar-summary" style="display: none;">
                                 <span id="summary-text"></span>
                             </div>
@@ -172,10 +173,6 @@
                                         <input type="date" id="admin-end-date" required>
                                     </div>
                                     <div class="form-group">
-                                        <label for="admin-reason">Raison (optionnel) :</label>
-                                        <textarea id="admin-reason" placeholder="Motif de l'absence..."></textarea>
-                                    </div>
-                                    <div class="form-group">
                                         <label for="admin-comment">Commentaire admin (optionnel) :</label>
                                         <textarea id="admin-comment" placeholder="Commentaire pour l'utilisateur..."></textarea>
                                     </div>
@@ -183,6 +180,50 @@
                                         <button type="button" class="btn" onclick="hideAdminAbsenceForm()">Annuler</button>
                                         <button type="submit" class="btn btn-success">Créer l'absence</button>
                                     </div>
+                    
+                    <!-- Formulaire admin pour créer une déclaration de maladie avec PDF -->
+                    <div id="admin-sickness-modal" class="modal" style="display: none;">
+                        <div class="modal-content" style="max-width: 600px;">
+                            <div class="modal-header">
+                                <h3 style="color: #856404; margin: 0;">🏥 Créer un arrêt maladie (Admin)</h3>
+                                <button class="modal-close" onclick="hideAdminSicknessForm()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="admin-sickness-form" enctype="multipart/form-data">
+                                    <div class="form-group">
+                                        <label for="admin-sickness-user">Utilisateur :</label>
+                                        <select id="admin-sickness-user" required>
+                                            <option value="">Sélectionner un utilisateur...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-sickness-start">Date de début :</label>
+                                        <input type="date" id="admin-sickness-start" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-sickness-end">Date de fin :</label>
+                                        <input type="date" id="admin-sickness-end" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="admin-sickness-description">Description (optionnel) :</label>
+                                        <textarea id="admin-sickness-description" placeholder="Détails (optionnel)..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Certificat médical (PDF) :</label>
+                                        <div id="admin-sickness-dropzone" style="border: 2px dashed #ffc107; padding: 20px; border-radius: 8px; background: #fff8e1; text-align: center; cursor: pointer;">
+                                            Glissez-déposez le PDF ici, ou cliquez pour sélectionner.
+                                            <input type="file" id="admin-sickness-pdf" accept=".pdf" style="display:none;" required>
+                                        </div>
+                                        <small style="display:block; color:#856404; margin-top:6px;">PDF uniquement, 10MB max</small>
+                                    </div>
+                                    <div style="text-align: right; margin-top: 20px;">
+                                        <button type="button" class="btn" onclick="hideAdminSicknessForm()">Annuler</button>
+                                        <button type="submit" class="btn btn-warning">Créer l'arrêt maladie</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                                 </form>
                             </div>
                         </div>
