@@ -906,16 +906,26 @@ class handler(BaseHTTPRequestHandler):
                         seg = path.strip('/').split('/')
                         decl_id = int(seg[1])
                         conn = init_db(); cursor = conn.cursor()
-                        cursor.execute('SELECT pdf_path, pdf_filename, user_id FROM sickness_declarations WHERE id = ?', (decl_id,))
+                        cursor.execute('SELECT pdf_path, pdf_filename, pdf_data, user_id FROM sickness_declarations WHERE id = ?', (decl_id,))
                         row = cursor.fetchone(); conn.close()
-                        if not row or not row[0] or not os.path.exists(row[0]):
+                        if not row:
+                            self.send_response(404); self.end_headers(); return
+                        pdf_path = row[0]; pdf_filename = row[1]; pdf_data = row[2]
+                        content_bytes = None
+                        if pdf_path and os.path.exists(pdf_path):
+                            with open(pdf_path, 'rb') as f:
+                                content_bytes = f.read()
+                        elif pdf_data:
+                            # pdf_data stocké en BLOB/BYTEA
+                            content_bytes = pdf_data if isinstance(pdf_data, (bytes, bytearray)) else None
+                        if not content_bytes:
                             self.send_response(404); self.end_headers(); return
                         self.send_response(200)
                         self.send_header('Content-type', 'application/pdf')
-                        self.send_header('Content-Disposition', f'inline; filename="{row[1] or "document.pdf"}"')
+                        self.send_header('Content-Disposition', f'inline; filename="{pdf_filename or "document.pdf"}"')
                         self.send_header('Access-Control-Allow-Origin', '*')
                         self.end_headers()
-                        with open(row[0], 'rb') as f: self.wfile.write(f.read())
+                        self.wfile.write(content_bytes)
                         return
                     except Exception:
                         self.send_response(500); self.end_headers(); return
@@ -1140,8 +1150,9 @@ class handler(BaseHTTPRequestHandler):
                                     os.makedirs(base_dir, exist_ok=True)
                                     unique_name = f"{uuid.uuid4()}.pdf"
                                     file_path = os.path.join(base_dir, unique_name)
+                                    file_bytes = pdf_field.file.read()
                                     with open(file_path, 'wb') as out:
-                                        out.write(pdf_field.file.read())
+                                        out.write(file_bytes)
                                     pdf_filename = original_name
                                     pdf_path = file_path
                                 except Exception as e:
@@ -1155,10 +1166,18 @@ class handler(BaseHTTPRequestHandler):
                                 return
 
                             conn = init_db(); cursor = conn.cursor()
-                            cursor.execute('''
-                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
-                                VALUES (?, ?, ?, ?, ?, ?, 0, 0)
-                            ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path))
+                            # Essayer d'insérer aussi les octets (pdf_data)
+                            try:
+                                cursor.execute('''
+                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+                                ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path, file_bytes))
+                            except Exception:
+                                # fallback si colonne absente
+                                cursor.execute('''
+                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
+                                    VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+                                ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path))
                             conn.commit(); new_id = cursor.lastrowid
 
                             # Envoi email (meilleur effort) à admins + user avec la pièce jointe
@@ -1216,13 +1235,21 @@ class handler(BaseHTTPRequestHandler):
                             os.makedirs(base_dir, exist_ok=True)
                             unique_name = f"{uuid.uuid4()}.pdf"
                             file_path = os.path.join(base_dir, unique_name)
+                            file_bytes = pdf_field.file.read()
                             with open(file_path, 'wb') as out:
-                                out.write(pdf_field.file.read())
+                                out.write(file_bytes)
                             conn = init_db(); cursor = conn.cursor()
-                            cursor.execute('''
-                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
-                                VALUES (?, ?, ?, ?, ?, ?, 0, 0)
-                            ''', (user_id, start_date, end_date, description, original_name, file_path))
+                            # Essayer d'enregistrer aussi les octets
+                            try:
+                                cursor.execute('''
+                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+                                ''', (user_id, start_date, end_date, description, original_name, file_path, file_bytes))
+                            except Exception:
+                                cursor.execute('''
+                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
+                                    VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+                                ''', (user_id, start_date, end_date, description, original_name, file_path))
                             conn.commit(); new_id = cursor.lastrowid
                             # Récupérer email user + admins
                             cursor.execute('SELECT email, first_name, last_name FROM users WHERE id = ?', (user_id,))

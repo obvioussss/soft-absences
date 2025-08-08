@@ -58,6 +58,7 @@ def _init_db_postgres(db_url: str):
                 description TEXT,
                 pdf_filename TEXT,
                 pdf_path TEXT,
+                pdf_data BYTEA,
                 email_sent BOOLEAN DEFAULT FALSE,
                 viewed_by_admin BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -65,6 +66,13 @@ def _init_db_postgres(db_url: str):
             )
             """
         )
+        # Assurer la présence de la colonne pdf_data
+        try:
+            cur.execute("SELECT 1 FROM information_schema.columns WHERE table_name='sickness_declarations' AND column_name='pdf_data'")
+            if cur.fetchone() is None:
+                cur.execute("ALTER TABLE sickness_declarations ADD COLUMN pdf_data BYTEA")
+        except Exception:
+            pass
         # Admin par défaut si absent
         admin_local_password = hashlib.sha256("admin123".encode()).hexdigest()
         cur.execute(
@@ -149,6 +157,7 @@ def init_db():
             description TEXT,
             pdf_filename TEXT,
             pdf_path TEXT,
+            pdf_data BLOB,
             email_sent BOOLEAN DEFAULT 0,
             viewed_by_admin BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -156,6 +165,14 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
+    # Assurer la présence de la colonne pdf_data si table déjà existante
+    try:
+        cursor.execute("PRAGMA table_info(sickness_declarations)")
+        cols = [r[1] for r in cursor.fetchall()]
+        if 'pdf_data' not in cols:
+            cursor.execute('ALTER TABLE sickness_declarations ADD COLUMN pdf_data BLOB')
+    except Exception:
+        pass
     
     # Créer uniquement l'admin par défaut si absent
     admin_local_password = hashlib.sha256("admin123".encode()).hexdigest()
