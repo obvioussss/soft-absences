@@ -1297,6 +1297,37 @@ class handler(BaseHTTPRequestHandler):
                         response = {"message": "Déclaration marquée comme vue et email envoyé"}
                     except Exception as e:
                         response = {"error": str(e)}
+            elif self.path.rstrip('/') == '/absence-requests/admin':
+                # Création d'une absence par un administrateur (JSON)
+                current_user = get_user_from_auth_header(self.headers)
+                if not current_user or current_user.get('role') != 'admin':
+                    response = {"error": "Forbidden"}
+                else:
+                    payload = data or {}
+                    try:
+                        user_id = int(payload.get('user_id') or 0)
+                    except Exception:
+                        user_id = 0
+                    abs_type = to_db_type(payload.get('type'))  # 'VACANCES' ou 'MALADIE'
+                    start_date = payload.get('start_date')
+                    end_date = payload.get('end_date')
+                    reason = payload.get('reason')
+                    admin_comment = payload.get('admin_comment')
+                    status = to_db_status((payload.get('status') or 'approuve'))  # APPUOUE par défaut
+                    if not user_id or abs_type not in ['VACANCES','MALADIE'] or not start_date or not end_date:
+                        response = {"error": "Invalid payload"}
+                    else:
+                        try:
+                            conn = init_db(); cursor = conn.cursor()
+                            cursor.execute('''
+                                INSERT INTO absence_requests (user_id, type, start_date, end_date, reason, status, approved_by_id, admin_comment)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                            ''', (user_id, abs_type, start_date, end_date, reason, status, current_user['id'], admin_comment))
+                            conn.commit(); new_id = cursor.lastrowid
+                            conn.close()
+                            response = {"id": new_id, "user_id": user_id, "type": payload.get('type'), "start_date": start_date, "end_date": end_date, "reason": reason, "status": payload.get('status') or 'approuve'}
+                        except Exception as e:
+                            response = {"error": str(e)}
             elif self.path.startswith('/users'):
                 # Création utilisateur POST /users
                 if self.path.rstrip('/') == '/users':
