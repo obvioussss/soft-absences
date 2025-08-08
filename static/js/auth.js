@@ -16,9 +16,21 @@ async function login(email, password) {
         
         const data = await response.json();
         authToken = data.access_token;
+        // Persister le token pour les rechargements
+        try {
+            localStorage.setItem('authToken', authToken);
+        } catch (e) {
+            console.warn('Impossible de stocker le token', e);
+        }
         
         // Récupérer les infos utilisateur
         currentUser = await apiCall('/users/me');
+        // Persister l'utilisateur courant
+        try {
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        } catch (e) {
+            console.warn('Impossible de stocker les infos utilisateur', e);
+        }
         
         showMainContent();
         showAlert('Connexion réussie !');
@@ -32,7 +44,12 @@ function logout() {
     authToken = null;
     currentUser = null;
     // Nettoyer le localStorage au cas où
-    localStorage.clear();
+    try {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+    } catch (e) {
+        // ignore
+    }
     sessionStorage.clear();
     
     // Cacher tous les onglets admin

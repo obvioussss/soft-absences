@@ -1,5 +1,33 @@
 // Event Listeners et initialisation
 document.addEventListener('DOMContentLoaded', function() {
+    // Restauration de session si disponible
+    (async () => {
+        const hasToken = !!window.authToken;
+        const hasUser = !!window.currentUser;
+        if (hasToken) {
+            authToken = window.authToken;
+        }
+        if (hasUser) {
+            currentUser = window.currentUser;
+        } else if (hasToken) {
+            // Tenter de récupérer l'utilisateur courant si seulement le token est présent
+            try {
+                currentUser = await apiCall('/users/me');
+                try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch {}
+                window.currentUser = currentUser;
+            } catch (e) {
+                // Token invalide/expiré
+                try { localStorage.removeItem('authToken'); localStorage.removeItem('currentUser'); } catch {}
+                authToken = null;
+            }
+        }
+        if (authToken && currentUser) {
+            showMainContent();
+        } else {
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('main-content').style.display = 'none';
+        }
+    })();
     // Formulaire de connexion
     document.getElementById('login-form').addEventListener('submit', function(e) {
         e.preventDefault();

@@ -6,9 +6,18 @@ const CONFIG = {
     DATE_INPUT_FORMAT: 'YYYY-MM-DD'
 };
 
-// Variables globales
+// Variables globales (avec restauration depuis le stockage)
 let currentUser = null;
 let authToken = null;
+
+try {
+    const storedToken = localStorage.getItem('authToken');
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedToken) authToken = storedToken;
+    if (storedUser) currentUser = JSON.parse(storedUser);
+} catch (e) {
+    // stockage indisponible ou corrompu
+}
 
 // Export pour utilisation dans d'autres fichiers
 window.CONFIG = CONFIG;
