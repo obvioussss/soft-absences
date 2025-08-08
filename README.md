@@ -98,7 +98,7 @@ soft_abscences/
 │   │   ├── main.js
 │   │   ├── sickness.js
 │   │   └── utils.js
-│   ├── dashboard.html
+│   ├── (dashboard.html) [supprimé – SPA unique via index.html]
 │   ├── index.html
 │   └── style.css
 ├── tests/                # Tests unitaires

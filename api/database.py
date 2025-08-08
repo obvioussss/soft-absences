@@ -58,47 +58,12 @@ def init_db():
         )
     ''')
     
-    # Insérer des données de test avec mot de passe hashé
-    test_password = hashlib.sha256("password123".encode()).hexdigest()
-    
-    # Admin
-    cursor.execute('''
-        INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
-        VALUES ('admin@example.com', 'Admin', 'User', ?, 'ADMIN')
-    ''', (test_password,))
-
-    # Admin local (pour correspondre à l'interface locale)
+    # Créer uniquement l'admin par défaut pour un état « neuf »
     admin_local_password = hashlib.sha256("admin123".encode()).hexdigest()
     cursor.execute('''
         INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
         VALUES ('hello.obvious@gmail.com', 'Admin', 'System', ?, 'ADMIN')
     ''', (admin_local_password,))
-    
-    # Utilisateur test
-    user_password = hashlib.sha256("password123".encode()).hexdigest()
-    cursor.execute('''
-        INSERT OR IGNORE INTO users (email, first_name, last_name, password_hash, role) 
-        VALUES ('fautrel.pierre@gmail.com', 'Pierre', 'Fautrel', ?, 'USER')
-    ''', (user_password,))
-    
-    # Ajouter quelques absences de test
-    cursor.execute('''
-        INSERT OR IGNORE INTO absence_requests 
-        (user_id, type, start_date, end_date, reason, status) 
-        VALUES 
-        (2, 'VACANCES', '2024-01-15', '2024-01-19', 'Vacances d''hiver', 'APPROUVE'),
-        (2, 'MALADIE', '2024-02-01', '2024-02-03', 'Grippe', 'EN_ATTENTE'),
-        (2, 'VACANCES', '2024-03-20', '2024-03-25', 'Vacances de printemps', 'REFUSE')
-    ''')
-    
-    # Ajouter quelques déclarations de maladie de test
-    cursor.execute('''
-        INSERT OR IGNORE INTO sickness_declarations 
-        (user_id, start_date, end_date, description) 
-        VALUES 
-        (2, '2024-02-01', '2024-02-03', 'Grippe avec certificat médical'),
-        (2, '2024-04-10', '2024-04-12', 'Angine')
-    ''')
     
     conn.commit()
     return conn

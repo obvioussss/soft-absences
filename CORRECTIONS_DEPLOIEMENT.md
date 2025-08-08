@@ -73,7 +73,7 @@ Vous aviez absolument raison ! Il y avait **DEUX versions complètement différe
 
 ### ✅ Fichiers statiques
 - `/static/index.html` - Page d'accueil
-- `/static/dashboard.html` - Dashboard
+- `/static/dashboard.html` - [supprimé] la route `/dashboard` sert désormais `static/index.html`
 - `/static/css/styles.css` - Styles
 - `/static/js/*.js` - Scripts JavaScript
 

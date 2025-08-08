@@ -27,13 +27,11 @@ def generate_static_files_dict():
     # Fichiers HTML
     html_files = [
         ('/static/index.html', 'static/index.html'),
-        ('/static/dashboard.html', 'static/dashboard.html'),
     ]
     
     # Fichiers CSS
     css_files = [
         ('/static/css/styles.css', 'static/css/styles.css'),
-        ('/static/style.css', 'static/style.css'),
     ]
     
     # Fichiers JavaScript

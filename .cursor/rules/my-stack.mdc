@@ -1,17 +1,16 @@
 md
-Description: This is the project's tech stack
-Auto Attach: *.tsx, src/config/**/*.json, *Test.cpp, ...
+Description: Project tech stack and infra
+Auto Attach: *.py, *.md, static/**/*.js, static/**/*.html
 
 # Technical stack
 
-- Python for the backend
-- html/js for the frontend
-- SQL databases, never JSON file storage
-- Separated databases for dev, test, and prod
-- Elasticsearch for search, using elastic.co hosting
-- Elastic.co will have dev and prod indexes
-- Python tests
-description:
-globs:
-alwaysApply: false
+- Python (FastAPI + SQLAlchemy) backend
+- Frontend static HTML/JS served via Vercel routing
+- PostgreSQL/MySQL/SQLite supported via SQLAlchemy
+- Separate DBs for dev, test, prod
+- No JSON file storage for persistence
+- Tests: pytest
+description: Keep infra minimal, prefer managed services, no vendor lock-in specifics here
+globs: "**/*"
+alwaysApply: true
 ---

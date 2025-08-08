@@ -4,7 +4,7 @@ import os
 import sys
 from urllib.parse import urlparse, parse_qs
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import base64
 import io
 import importlib.util
@@ -85,7 +85,7 @@ def create_access_token(data: dict):
         # Import JWT seulement si disponible
         import jwt
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
         return encoded_jwt
@@ -95,7 +95,7 @@ def create_access_token(data: dict):
             "sub": data.get("sub", ""),
             "user_id": data.get("user_id", ""),
             "role": data.get("role", ""),
-            "exp": (datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).isoformat()
+            "exp": (datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)).isoformat().replace('+00:00', 'Z')
         }
         # Encoder en base64 simple
         payload_str = safe_json_dumps(payload)
@@ -113,7 +113,9 @@ def verify_token(token: str):
             
             # Vérifier l'expiration
             exp = datetime.fromisoformat(payload["exp"].replace("Z", "+00:00"))
-            if exp < datetime.utcnow():
+            if exp.tzinfo is None:
+                exp = exp.replace(tzinfo=timezone.utc)
+            if exp < datetime.now(timezone.utc):
                 return None
             return payload
         else:
@@ -843,10 +845,6 @@ class handler(BaseHTTPRequestHandler):
                 if serve_static_file(self, file_path):
                     return
                 else:
-                    # Fallback: si dashboard indisponible, servir l'index
-                    if file_path == '/static/dashboard.html':
-                        if serve_static_file(self, '/static/index.html'):
-                            return
                     self.send_response(404)
                     self.send_header('Content-type', 'application/json')
                     self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'")

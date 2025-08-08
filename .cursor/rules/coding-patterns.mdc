@@ -1,21 +1,21 @@
 md
-Description: Coding style and hygiene practices
-Auto Attach: *.ts, *.tsx, *.js, *.py
+Description: Coding style and hygiene practices for this repo
+Auto Attach: *.ts, *.tsx, *.js, *.py, *.md
 
 # Coding pattern preferences
 
 - Always prefer simple solutions
-- Avoid duplication of code whenever possible, which means checking for other areas of the codebase that might have similar functionality
+- Avoid duplication of code; check for similar functionality before adding new code
 - Write code that takes into account the different environments: dev, test, and prod
 - You are careful to only make changes that are requested or you are confident are well understood
 - When fixing an issue or bug, do not introduce a new pattern or technology without first discussing it
 - Keep the codebase very clean and organized
 - Avoid writing scripts in files if possible, especially if the script is likely only to be used once
-- When having files over 200-300 lines of code. Refactor at that point.
+- When files exceed ~300 lines, consider refactoring for readability
 - Mocking data is only needed for tests, never mock data for dev or prod
 - Never add stubbing or fake data patterns to code that affects the dev or prod environments
 - Never overwrite my .env file without first asking and confirming
-description:
-globs:
-alwaysApply: false
+description: Strict clean code, incremental refactors, tests first where feasible
+globs: "**/*"
+alwaysApply: true
 ---
