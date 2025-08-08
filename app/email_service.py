@@ -197,6 +197,58 @@ Système de gestion des absences
         """
         
         return body, html_body
+
+    def send_user_created_notification(self, user_email: str, user_name: str):
+        """Notifier un utilisateur que son compte a été créé par un administrateur"""
+        subject = f"Compte créé"
+        body = f"""
+Bonjour {user_name},
+
+Votre compte a été créé par un administrateur dans l'application de gestion des absences.
+
+Vous pouvez dès à présent vous connecter pour consulter votre tableau de bord et effectuer vos demandes.
+
+Cordialement,
+Système de gestion des absences
+        """
+        html_body = f"""
+<html>
+<body>
+    <h2>Compte créé</h2>
+    <p>Bonjour {user_name},</p>
+    <p>Votre compte a été créé par un administrateur dans l'application de gestion des absences.</p>
+    <p>Vous pouvez dès à présent vous connecter pour consulter votre tableau de bord et effectuer vos demandes.</p>
+    <p>Cordialement,<br>Système de gestion des absences</p>
+    </body>
+</html>
+        """
+        return self.send_email([user_email], subject, body, html_body)
+
+    def send_user_updated_notification(self, user_email: str, user_name: str):
+        """Notifier un utilisateur que ses informations ont été modifiées par un administrateur"""
+        subject = f"Mise à jour de votre compte"
+        body = f"""
+Bonjour {user_name},
+
+Les informations de votre compte ont été mises à jour par un administrateur.
+
+Si vous n'êtes pas à l'origine de cette modification, veuillez contacter un administrateur.
+
+Cordialement,
+Système de gestion des absences
+        """
+        html_body = f"""
+<html>
+<body>
+    <h2>Mise à jour de votre compte</h2>
+    <p>Bonjour {user_name},</p>
+    <p>Les informations de votre compte ont été mises à jour par un administrateur.</p>
+    <p>Si vous n'êtes pas à l'origine de cette modification, veuillez contacter un administrateur.</p>
+    <p>Cordialement,<br>Système de gestion des absences</p>
+</body>
+</html>
+        """
+        return self.send_email([user_email], subject, body, html_body)
     
     def send_absence_modification_notification(self, admin_emails: List[str], user_name: str, absence_type: str, start_date: str, end_date: str, reason: str = None, request_id: int = None):
         """Notifier les admins de la modification d'une demande d'absence"""

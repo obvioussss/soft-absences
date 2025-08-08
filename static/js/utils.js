@@ -85,7 +85,15 @@ function showTab(tabName) {
                 loadCalendar();
                 break;
             case 'procedure':
+                // Charger les 2 sous-onglets
                 loadUserRequests();
+                (async () => {
+                    try {
+                        const declHtml = await loadSicknessDeclarations();
+                        const declDiv = document.getElementById('user-sickness-declarations-list');
+                        if (declDiv) declDiv.innerHTML = declHtml;
+                    } catch {}
+                })();
                 break;
             case 'admin-users':
                 loadUsers();
@@ -191,7 +199,7 @@ function hideNewRequestForm() {
 
 // Fonction pour charger les demandes de l'utilisateur
 async function loadUserRequests() {
-    const requestsListDiv = document.getElementById('user-requests-list');
+    const requestsListDiv = document.getElementById('user-vacation-requests-list');
     
     try {
         requestsListDiv.innerHTML = '<div class="loading">Chargement...</div>';
@@ -200,8 +208,8 @@ async function loadUserRequests() {
             apiCall('/sickness-declarations/')
         ]);
 
-        if ((requests.length + sickness.length) === 0) {
-            requestsListDiv.innerHTML = '<p>Aucune demande ou déclaration.</p>';
+        if (requests.length === 0) {
+            requestsListDiv.innerHTML = '<p>Aucune demande de vacances.</p>';
             return;
         }
 
@@ -230,23 +238,7 @@ async function loadUserRequests() {
             `;
         });
 
-        // Déclarations de maladie (avec PDF)
-        sickness.forEach(decl => {
-            const startDate = formatDateSafe(decl.start_date);
-            const endDate = formatDateSafe(decl.end_date);
-            const createdDate = formatDateSafe(decl.created_at);
-            const emailBadge = decl.email_sent ? '<span class="status-badge status-approuve">Email envoyé</span>' : '<span class="status-badge status-refuse">Email non envoyé</span>';
-            const pdfCol = decl.pdf_filename ? `✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${decl.id}/pdf" target="_blank" rel="noopener">${decl.pdf_filename}</a>` : '❌ Aucun PDF';
-            html += `
-                <tr>
-                    <td><span class="status-badge event-maladie">Maladie</span></td>
-                    <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
-                    <td><span class="status-badge status-approuve">Enregistrée</span></td>
-                    <td>${decl.description ? `<em>"${decl.description}"</em>` : '—'}<br>${pdfCol}<br>${emailBadge}</td>
-                    <td>${createdDate}</td>
-                </tr>
-            `;
-        });
+        // On affiche uniquement les demandes de vacances ici; les maladies sont dans l'autre sous-onglet
 
         html += '</tbody></table>';
         requestsListDiv.innerHTML = html;

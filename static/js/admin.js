@@ -168,6 +168,25 @@ async function showAdminAbsenceForm() {
         
         document.getElementById('admin-start-date').value = tomorrow.toISOString().split('T')[0];
         document.getElementById('admin-end-date').value = tomorrow.toISOString().split('T')[0];
+        // Gérer l'option PDF si type maladie
+        const typeSelect = document.getElementById('admin-absence-type');
+        const pdfGroup = document.getElementById('admin-absence-pdf-group');
+        const dropzone = document.getElementById('admin-absence-dropzone');
+        const fileInput = document.getElementById('admin-absence-pdf');
+        const syncVisibility = () => { if (pdfGroup) pdfGroup.style.display = typeSelect.value === 'maladie' ? 'block' : 'none'; };
+        if (typeSelect) typeSelect.onchange = syncVisibility;
+        syncVisibility();
+        if (dropzone && fileInput) {
+            dropzone.onclick = () => fileInput.click();
+            dropzone.ondragover = (e) => { e.preventDefault(); dropzone.style.background = '#fff8e1'; };
+            dropzone.ondragleave = () => { dropzone.style.background = '#fff8e1'; };
+            dropzone.ondrop = (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    fileInput.files = e.dataTransfer.files;
+                }
+            };
+        }
         
     } catch (error) {
         showAlert('Erreur lors du chargement des utilisateurs: ' + error.message, 'error');
@@ -308,22 +327,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                await apiCall('/absence-requests/admin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                showAlert('Absence créée avec succès', 'success');
+                const typeVal = document.getElementById('admin-absence-type').value;
+                if (typeVal === 'maladie') {
+                    const pdf = document.getElementById('admin-absence-pdf')?.files?.[0];
+                    if (!pdf) { showAlert('Veuillez joindre un PDF pour un arrêt maladie', 'error'); return; }
+                    if (pdf.type !== 'application/pdf') { showAlert('PDF uniquement', 'error'); return; }
+                    if (pdf.size > 10 * 1024 * 1024) { showAlert('PDF > 10MB', 'error'); return; }
+                    const fd = new FormData();
+                    fd.append('user_id', String(formData.user_id));
+                    fd.append('start_date', formData.start_date);
+                    fd.append('end_date', formData.end_date);
+                    if (formData.reason) fd.append('description', formData.reason);
+                    fd.append('pdf_file', pdf);
+                    await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/admin`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: fd
+                    }).then(async r => { if (!r.ok) throw new Error((await r.json()).detail || 'Erreur'); });
+                    showAlert('Arrêt maladie créé et email envoyé.', 'success');
+                } else {
+                    await apiCall('/absence-requests/admin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    showAlert('Absence créée avec succès', 'success');
+                }
                 hideAdminAbsenceForm();
-                
-                // Recharger le calendrier si on est sur la vue calendrier
                 if (calendar && currentUser.role === 'admin') {
                     await calendar.showCalendar();
                 }
-                
             } catch (error) {
                 showAlert('Erreur lors de la création de l\'absence: ' + error.message, 'error');
             }
@@ -465,6 +500,7 @@ async function approveRequest(requestId) {
         
         showAlert('Demande approuvée !');
         loadAllRequests();
+        if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
         
     } catch (error) {
         showAlert(error.message, 'error');
@@ -485,6 +521,7 @@ async function rejectRequest(requestId) {
         
         showAlert('Demande refusée.');
         loadAllRequests();
+        if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
         
     } catch (error) {
         showAlert(error.message, 'error');

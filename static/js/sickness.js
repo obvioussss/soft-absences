@@ -123,7 +123,6 @@ async function loadSicknessDeclarations() {
                 
                 const pdfCell = declaration.pdf_filename ? `
                     ✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf" target="_blank" rel="noopener">${declaration.pdf_filename}</a>
-                    <button class="btn btn-sm" onclick="previewPdf(${declaration.id})">👁️ Voir</button>
                 ` : '❌ Aucun fichier';
                 
                 html += `
@@ -213,7 +212,8 @@ async function loadAllSicknessDeclarations() {
                 // Statut du PDF avec plus de détails
                 let pdfStatus = '❌ <span style="color: #e74c3c;">Aucun document</span>';
                 if (declaration.pdf_filename) {
-                    pdfStatus = `✅ <strong style="color: #27ae60;">${declaration.pdf_filename}</strong>`;
+                    const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf`;
+                    pdfStatus = `✅ <a href="${url}" target="_blank" rel="noopener">${declaration.pdf_filename}</a>`;
                 }
                 
                 // Statut email avec plus de clarté

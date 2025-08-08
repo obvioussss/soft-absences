@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models, schemas, crud, auth
+from app.email_service import email_service
 
 router = APIRouter()
 
@@ -15,7 +16,17 @@ async def create_user(
     db_user = crud.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email déjà enregistré")
-    return crud.create_user(db=db, user=user)
+    created = crud.create_user(db=db, user=user)
+    # Notifier l'utilisateur de la création de son compte
+    try:
+        email_service.send_user_created_notification(
+            user_email=created.email,
+            user_name=f"{created.first_name} {created.last_name}"
+        )
+    except Exception:
+        # On ne bloque pas la création de compte si l'email échoue
+        pass
+    return created
 
 @router.get("/", response_model=list[schemas.User])
 async def read_users(
@@ -57,6 +68,13 @@ async def update_user(
         )
     
     updated_user = crud.update_user(db=db, user_id=user_id, user_update=user_update)
+    try:
+        email_service.send_user_updated_notification(
+            user_email=updated_user.email,
+            user_name=f"{updated_user.first_name} {updated_user.last_name}"
+        )
+    except Exception:
+        pass
     return updated_user
 
 @router.get("/me", response_model=schemas.User)

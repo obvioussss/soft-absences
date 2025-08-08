@@ -87,7 +87,6 @@ def get_static_content(file_path):
                         <div class="calendar-actions">
                             <button id="today-btn" class="btn btn-secondary">Aujourd'hui</button>
                             <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter absence</button>
-                             <button id="admin-add-sickness-btn" class="btn btn-warning admin-only" onclick="showAdminSicknessForm()" style="display: none;">🏥 Ajouter arrêt maladie (PDF)</button>
                             <div id="calendar-summary" class="calendar-summary" style="display: none;">
                                 <span id="summary-text"></span>
                             </div>
@@ -187,54 +186,20 @@ def get_static_content(file_path):
                                         <label for="admin-comment">Commentaire admin (optionnel) :</label>
                                         <textarea id="admin-comment" placeholder="Commentaire pour l'utilisateur..."></textarea>
                                     </div>
+                                    <div class="form-group" id="admin-absence-pdf-group" style="display:none;">
+                                        <label>Certificat médical (PDF) :</label>
+                                        <div id="admin-absence-dropzone" style="border: 2px dashed #ffc107; padding: 20px; border-radius: 8px; background: #fff8e1; text-align: center; cursor: pointer;">
+                                            Glissez-déposez le PDF ici, ou cliquez pour sélectionner.
+                                            <input type="file" id="admin-absence-pdf" accept=".pdf" style="display:none;">
+                                        </div>
+                                        <small style="display:block; color:#856404; margin-top:6px;">PDF uniquement, 10MB max</small>
+                                    </div>
                                     <div style="text-align: right; margin-top: 20px;">
                                         <button type="button" class="btn" onclick="hideAdminAbsenceForm()">Annuler</button>
                                         <button type="submit" class="btn btn-success">Créer l'absence</button>
                                     </div>
                     
-                    <!-- Formulaire admin pour créer une déclaration de maladie avec PDF -->
-                    <div id="admin-sickness-modal" class="modal" style="display: none;">
-                        <div class="modal-content" style="max-width: 600px;">
-                            <div class="modal-header">
-                                <h3 style="color: #856404; margin: 0;">🏥 Créer un arrêt maladie (Admin)</h3>
-                                <button class="modal-close" onclick="hideAdminSicknessForm()">&times;</button>
-                            </div>
-                            <div class="modal-body">
-                                <form id="admin-sickness-form" enctype="multipart/form-data">
-                                    <div class="form-group">
-                                        <label for="admin-sickness-user">Utilisateur :</label>
-                                        <select id="admin-sickness-user" required>
-                                            <option value="">Sélectionner un utilisateur...</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="admin-sickness-start">Date de début :</label>
-                                        <input type="date" id="admin-sickness-start" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="admin-sickness-end">Date de fin :</label>
-                                        <input type="date" id="admin-sickness-end" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="admin-sickness-description">Description (optionnel) :</label>
-                                        <textarea id="admin-sickness-description" placeholder="Détails (optionnel)..."></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Certificat médical (PDF) :</label>
-                                        <div id="admin-sickness-dropzone" style="border: 2px dashed #ffc107; padding: 20px; border-radius: 8px; background: #fff8e1; text-align: center; cursor: pointer;">
-                                            Glissez-déposez le PDF ici, ou cliquez pour sélectionner.
-                                            <input type="file" id="admin-sickness-pdf" accept=".pdf" style="display:none;" required>
-                                        </div>
-                                        <small style="display:block; color:#856404; margin-top:6px;">PDF uniquement, 10MB max</small>
-                                    </div>
-                                    <div style="text-align: right; margin-top: 20px;">
-                                        <button type="button" class="btn" onclick="hideAdminSicknessForm()">Annuler</button>
-                                        <button type="submit" class="btn btn-warning">Créer l'arrêt maladie</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+                    
                                 </form>
                             </div>
                         </div>
@@ -309,10 +274,16 @@ def get_static_content(file_path):
                     </form>
                 </div>
                 
-                <!-- Liste des demandes de l'utilisateur -->
-                <div id="user-requests-section" style="margin-bottom: 30px;">
-                    <h3>📋 Mes demandes en cours</h3>
-                    <div id="user-requests-list" class="loading">Chargement...</div>
+                <!-- Sous-onglets pour les demandes utilisateur -->
+                <div class="sub-tabs" style="margin-top: 10px;">
+                    <button class="sub-tab active" onclick="showSubTab('user-vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab" onclick="showSubTab('user-sickness-declarations')">🏥 Déclarations de Maladie</button>
+                </div>
+                <div id="user-vacation-requests" class="sub-tab-content active">
+                    <div id="user-vacation-requests-list" class="loading">Chargement...</div>
+                </div>
+                <div id="user-sickness-declarations" class="sub-tab-content">
+                    <div id="user-sickness-declarations-list" class="loading">Chargement...</div>
                 </div>
                 
                 <!-- Section procédure séparée -->
@@ -1302,8 +1273,11 @@ function showMainContent() {
     
     // Afficher les infos utilisateur
     const userInfo = document.getElementById('user-info');
+    const safeFirst = currentUser && currentUser.first_name ? currentUser.first_name : '';
+    const safeLast = currentUser && currentUser.last_name ? currentUser.last_name : '';
+    const displayName = (safeFirst || safeLast) ? `${safeFirst} ${safeLast}`.trim() : currentUser.email;
     userInfo.innerHTML = `
-        <strong>${currentUser.first_name} ${currentUser.last_name}</strong><br>
+        <strong>${displayName}</strong><br>
         <small>${currentUser.email} - ${currentUser.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</small>
     `;
     
@@ -1388,7 +1362,7 @@ async function loadDashboard() {
     } else {
         // Dashboard pour utilisateurs normaux
         try {
-            const dashboardData = await apiCall('/api/dashboard');
+            const dashboardData = await apiCall('/dashboard/');
             
             let html = '<h3>🌴 Compteur de Congés Payés</h3>';
             
@@ -2006,6 +1980,25 @@ async function showAdminAbsenceForm() {
         
         document.getElementById('admin-start-date').value = tomorrow.toISOString().split('T')[0];
         document.getElementById('admin-end-date').value = tomorrow.toISOString().split('T')[0];
+        // Gérer l'option PDF si type maladie
+        const typeSelect = document.getElementById('admin-absence-type');
+        const pdfGroup = document.getElementById('admin-absence-pdf-group');
+        const dropzone = document.getElementById('admin-absence-dropzone');
+        const fileInput = document.getElementById('admin-absence-pdf');
+        const syncVisibility = () => { if (pdfGroup) pdfGroup.style.display = typeSelect.value === 'maladie' ? 'block' : 'none'; };
+        if (typeSelect) typeSelect.onchange = syncVisibility;
+        syncVisibility();
+        if (dropzone && fileInput) {
+            dropzone.onclick = () => fileInput.click();
+            dropzone.ondragover = (e) => { e.preventDefault(); dropzone.style.background = '#fff8e1'; };
+            dropzone.ondragleave = () => { dropzone.style.background = '#fff8e1'; };
+            dropzone.ondrop = (e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    fileInput.files = e.dataTransfer.files;
+                }
+            };
+        }
         
     } catch (error) {
         showAlert('Erreur lors du chargement des utilisateurs: ' + error.message, 'error');
@@ -2146,22 +2139,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                await apiCall('/absence-requests/admin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                showAlert('Absence créée avec succès', 'success');
+                const typeVal = document.getElementById('admin-absence-type').value;
+                if (typeVal === 'maladie') {
+                    const pdf = document.getElementById('admin-absence-pdf')?.files?.[0];
+                    if (!pdf) { showAlert('Veuillez joindre un PDF pour un arrêt maladie', 'error'); return; }
+                    if (pdf.type !== 'application/pdf') { showAlert('PDF uniquement', 'error'); return; }
+                    if (pdf.size > 10 * 1024 * 1024) { showAlert('PDF > 10MB', 'error'); return; }
+                    const fd = new FormData();
+                    fd.append('user_id', String(formData.user_id));
+                    fd.append('start_date', formData.start_date);
+                    fd.append('end_date', formData.end_date);
+                    if (formData.reason) fd.append('description', formData.reason);
+                    fd.append('pdf_file', pdf);
+                    await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/admin`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${authToken}` },
+                        body: fd
+                    }).then(async r => { if (!r.ok) throw new Error((await r.json()).detail || 'Erreur'); });
+                    showAlert('Arrêt maladie créé et email envoyé.', 'success');
+                } else {
+                    await apiCall('/absence-requests/admin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    showAlert('Absence créée avec succès', 'success');
+                }
                 hideAdminAbsenceForm();
-                
-                // Recharger le calendrier si on est sur la vue calendrier
                 if (calendar && currentUser.role === 'admin') {
                     await calendar.showCalendar();
                 }
-                
             } catch (error) {
                 showAlert('Erreur lors de la création de l\'absence: ' + error.message, 'error');
             }
@@ -2303,6 +2312,7 @@ async function approveRequest(requestId) {
         
         showAlert('Demande approuvée !');
         loadAllRequests();
+        if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
         
     } catch (error) {
         showAlert(error.message, 'error');
@@ -2323,6 +2333,7 @@ async function rejectRequest(requestId) {
         
         showAlert('Demande refusée.');
         loadAllRequests();
+        if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
         
     } catch (error) {
         showAlert(error.message, 'error');
@@ -2495,7 +2506,6 @@ async function loadSicknessDeclarations() {
                 
                 const pdfCell = declaration.pdf_filename ? `
                     ✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf" target="_blank" rel="noopener">${declaration.pdf_filename}</a>
-                    <button class="btn btn-sm" onclick="previewPdf(${declaration.id})">👁️ Voir</button>
                 ` : '❌ Aucun fichier';
                 
                 html += `
@@ -2585,7 +2595,8 @@ async function loadAllSicknessDeclarations() {
                 // Statut du PDF avec plus de détails
                 let pdfStatus = '❌ <span style="color: #e74c3c;">Aucun document</span>';
                 if (declaration.pdf_filename) {
-                    pdfStatus = `✅ <strong style="color: #27ae60;">${declaration.pdf_filename}</strong>`;
+                    const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf`;
+                    pdfStatus = `✅ <a href="${url}" target="_blank" rel="noopener">${declaration.pdf_filename}</a>`;
                 }
                 
                 // Statut email avec plus de clarté
@@ -2754,7 +2765,15 @@ function showTab(tabName) {
                 loadCalendar();
                 break;
             case 'procedure':
+                // Charger les 2 sous-onglets
                 loadUserRequests();
+                (async () => {
+                    try {
+                        const declHtml = await loadSicknessDeclarations();
+                        const declDiv = document.getElementById('user-sickness-declarations-list');
+                        if (declDiv) declDiv.innerHTML = declHtml;
+                    } catch {}
+                })();
                 break;
             case 'admin-users':
                 loadUsers();
@@ -2860,7 +2879,7 @@ function hideNewRequestForm() {
 
 // Fonction pour charger les demandes de l'utilisateur
 async function loadUserRequests() {
-    const requestsListDiv = document.getElementById('user-requests-list');
+    const requestsListDiv = document.getElementById('user-vacation-requests-list');
     
     try {
         requestsListDiv.innerHTML = '<div class="loading">Chargement...</div>';
@@ -2869,8 +2888,8 @@ async function loadUserRequests() {
             apiCall('/sickness-declarations/')
         ]);
 
-        if ((requests.length + sickness.length) === 0) {
-            requestsListDiv.innerHTML = '<p>Aucune demande ou déclaration.</p>';
+        if (requests.length === 0) {
+            requestsListDiv.innerHTML = '<p>Aucune demande de vacances.</p>';
             return;
         }
 
@@ -2899,23 +2918,7 @@ async function loadUserRequests() {
             `;
         });
 
-        // Déclarations de maladie (avec PDF)
-        sickness.forEach(decl => {
-            const startDate = formatDateSafe(decl.start_date);
-            const endDate = formatDateSafe(decl.end_date);
-            const createdDate = formatDateSafe(decl.created_at);
-            const emailBadge = decl.email_sent ? '<span class="status-badge status-approuve">Email envoyé</span>' : '<span class="status-badge status-refuse">Email non envoyé</span>';
-            const pdfCol = decl.pdf_filename ? `✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${decl.id}/pdf" target="_blank" rel="noopener">${decl.pdf_filename}</a>` : '❌ Aucun PDF';
-            html += `
-                <tr>
-                    <td><span class="status-badge event-maladie">Maladie</span></td>
-                    <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
-                    <td><span class="status-badge status-approuve">Enregistrée</span></td>
-                    <td>${decl.description ? `<em>"${decl.description}"</em>` : '—'}<br>${pdfCol}<br>${emailBadge}</td>
-                    <td>${createdDate}</td>
-                </tr>
-            `;
-        });
+        // On affiche uniquement les demandes de vacances ici; les maladies sont dans l'autre sous-onglet
 
         html += '</tbody></table>';
         requestsListDiv.innerHTML = html;

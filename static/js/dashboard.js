@@ -36,7 +36,7 @@ async function loadDashboard() {
     } else {
         // Dashboard pour utilisateurs normaux
         try {
-            const dashboardData = await apiCall('/api/dashboard');
+            const dashboardData = await apiCall('/dashboard/');
             
             let html = '<h3>🌴 Compteur de Congés Payés</h3>';
             

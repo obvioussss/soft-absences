@@ -74,8 +74,11 @@ function showMainContent() {
     
     // Afficher les infos utilisateur
     const userInfo = document.getElementById('user-info');
+    const safeFirst = currentUser && currentUser.first_name ? currentUser.first_name : '';
+    const safeLast = currentUser && currentUser.last_name ? currentUser.last_name : '';
+    const displayName = (safeFirst || safeLast) ? `${safeFirst} ${safeLast}`.trim() : currentUser.email;
     userInfo.innerHTML = `
-        <strong>${currentUser.first_name} ${currentUser.last_name}</strong><br>
+        <strong>${displayName}</strong><br>
         <small>${currentUser.email} - ${currentUser.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</small>
     `;
     
