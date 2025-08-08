@@ -724,7 +724,7 @@ def handle_login(data):
             return {"error": "Base de données non initialisée"}
             
         cursor = conn.cursor()
-            cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = %s', (email,))
+        cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = %s', (email,))
         user = cursor.fetchone()
         conn.close()
         
@@ -1364,7 +1364,7 @@ class handler(BaseHTTPRequestHandler):
                 admin_comment = (data or {}).get('admin_comment')
                 try:
                     conn = init_db(); cursor = conn.cursor()
-                cursor.execute('UPDATE absence_requests SET status = %s, admin_comment = %s WHERE id = %s', (new_status, admin_comment, request_id))
+                    cursor.execute('UPDATE absence_requests SET status = %s, admin_comment = %s WHERE id = %s', (new_status, admin_comment, request_id))
                     conn.commit(); conn.close()
                     response = {"id": request_id, "status": (data or {}).get('status'), "admin_comment": admin_comment}
                 except Exception as e:
@@ -1380,13 +1380,13 @@ class handler(BaseHTTPRequestHandler):
                     conn = init_db(); cursor = conn.cursor()
                     if payload.get('password'):
                         cursor.execute('''
-                            UPDATE users SET email=?, first_name=?, last_name=?, role=?, password_hash=? WHERE id=?
+                            UPDATE users SET email=%s, first_name=%s, last_name=%s, role=%s, password_hash=%s WHERE id=%s
                         ''', (
                             payload.get('email'), payload.get('first_name'), payload.get('last_name'), (payload.get('role') or 'user').upper(), hash_password(payload.get('password')), user_id
                         ))
                     else:
                         cursor.execute('''
-                            UPDATE users SET email=?, first_name=?, last_name=?, role=? WHERE id=?
+                            UPDATE users SET email=%s, first_name=%s, last_name=%s, role=%s WHERE id=%s
                         ''', (
                             payload.get('email'), payload.get('first_name'), payload.get('last_name'), (payload.get('role') or 'user').upper(), user_id
                         ))
@@ -1423,7 +1423,7 @@ class handler(BaseHTTPRequestHandler):
                     user_id = 0
                 try:
                     conn = init_db(); cursor = conn.cursor()
-                cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
+                    cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
                     conn.commit(); conn.close()
                     response = {"message": "Utilisateur supprimé"}
                 except Exception as e:
