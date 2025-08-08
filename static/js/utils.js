@@ -17,6 +17,32 @@ function formatDate(dateString) {
     return date.toLocaleDateString(CONFIG.DATE_FORMAT);
 }
 
+// Formatage robuste inter-navigateurs (notamment Safari) pour les dates ISO
+function formatDateSafe(value) {
+    if (!value) return '—';
+    let candidate = value;
+    if (typeof candidate === 'string') {
+        // Remplacer l'espace par un T si nécessaire
+        if (candidate.includes(' ') && !candidate.includes('T')) {
+            candidate = candidate.replace(' ', 'T');
+        }
+        // Supprimer les microsecondes si présentes (Safari peut échouer)
+        // Ex: 2025-08-11T12:34:56.123456 -> 2025-08-11T12:34:56
+        candidate = candidate.replace(/(\.\d{3,})/, '');
+    }
+    let d = new Date(candidate);
+    if (isNaN(d)) {
+        // Fallback: garder uniquement la partie date
+        const datePart = String(value).split('T')[0] || String(value).split(' ')[0];
+        if (datePart) {
+            const d2 = new Date(datePart);
+            if (!isNaN(d2)) return d2.toLocaleDateString(CONFIG.DATE_FORMAT);
+        }
+        return '—';
+    }
+    return d.toLocaleDateString(CONFIG.DATE_FORMAT);
+}
+
 function formatDateForInput(dateString) {
     const date = new Date(dateString);
     return date.toISOString().slice(0, 10); // Format YYYY-MM-DD pour input type="date"
@@ -183,9 +209,9 @@ async function loadUserRequests() {
         let html = '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Raison</th><th>Créée le</th></tr></thead><tbody>';
         
         requests.forEach(request => {
-            const startDate = new Date(request.start_date).toLocaleDateString('fr-FR');
-            const endDate = new Date(request.end_date).toLocaleDateString('fr-FR');
-            const createdDate = new Date(request.created_at).toLocaleDateString('fr-FR');
+            const startDate = formatDateSafe(request.start_date);
+            const endDate = formatDateSafe(request.end_date);
+            const createdDate = formatDateSafe(request.created_at);
             
             const statusText = {
                 'en_attente': 'En attente',

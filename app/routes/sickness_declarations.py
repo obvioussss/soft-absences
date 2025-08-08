@@ -64,9 +64,13 @@ async def create_sickness_declaration(
         
         # Envoyer l'email avec le PDF
         user_name = f"{current_user.first_name} {current_user.last_name}"
+        # Envoyer l'email à l'admin et à l'utilisateur
+        admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
+        admin_emails = [admin.email for admin in admin_users] or ["hello.obvious@gmail.com"]
+        recipients = list({*(admin_emails), current_user.email})
         email_sent = email_service.send_sickness_declaration_email(
             user_name=user_name,
-            user_email=current_user.email,
+            to_emails=recipients,
             start_date=str(start_date_obj),
             end_date=str(end_date_obj),
             description=description,

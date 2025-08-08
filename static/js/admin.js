@@ -98,9 +98,9 @@ async function loadAllRequests() {
         html += '<table class="table"><thead><tr><th>👤 Utilisateur</th><th>📅 Période</th><th>📝 Raison</th><th>📊 Statut</th><th>🕐 Créée le</th><th>⚡ Actions</th></tr></thead><tbody>';
         
         requests.forEach(request => {
-            const startDate = new Date(request.start_date).toLocaleDateString('fr-FR');
-            const endDate = new Date(request.end_date).toLocaleDateString('fr-FR');
-            const createdDate = new Date(request.created_at).toLocaleDateString('fr-FR');
+            const startDate = formatDateSafe(request.start_date);
+            const endDate = formatDateSafe(request.end_date);
+            const createdDate = formatDateSafe(request.created_at);
             
             // Style de la ligne selon le statut
             let rowStyle = '';

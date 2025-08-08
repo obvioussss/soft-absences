@@ -334,15 +334,15 @@ Système de gestion des absences
         
         return body, html_body
     
-    def send_sickness_declaration_email(self, user_name: str, user_email: str, start_date: str, end_date: str, description: str = None, pdf_path: str = None):
-        """Envoyer un email de déclaration de maladie"""
+    def send_sickness_declaration_email(self, user_name: str, to_emails: list[str], start_date: str, end_date: str, description: str = None, pdf_path: str = None):
+        """Envoyer un email de déclaration de maladie (à un ou plusieurs destinataires)"""
         subject = f"Nouvelle déclaration de maladie - {user_name}"
         body, html_body = self._create_sickness_declaration_content(user_name, start_date, end_date, description)
         
         if pdf_path:
-            return self.send_email_with_attachment([user_email], subject, body, html_body, pdf_path)
+            return self.send_email_with_attachment(to_emails, subject, body, html_body, pdf_path)
         else:
-            return self.send_email([user_email], subject, body, html_body)
+            return self.send_email(to_emails, subject, body, html_body)
     
     def _create_sickness_declaration_content(self, user_name: str, start_date: str, end_date: str, description: str = None):
         """Crée le contenu pour une déclaration de maladie"""

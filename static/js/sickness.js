@@ -82,9 +82,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     throw new Error(errorData.detail || 'Erreur lors de l\'envoi de la déclaration');
                 }
                 
-                const result = await response.json();
+                 const result = await response.json();
                 
-                showAlert('Déclaration de maladie envoyée avec succès ! Un email a été envoyé à hello.obvious@gmail.com', 'success');
+                showAlert('Déclaration de maladie envoyée avec succès ! Email envoyé aux administrateurs.', 'success');
                 hideSicknessDeclarationForm();
                 
                 // Recharger la liste des demandes si on est sur l'onglet procédure
