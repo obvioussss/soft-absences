@@ -2923,6 +2923,35 @@ function showSubTab(subTabName) {
     const content = document.getElementById(subTabName);
     if (content) {
         content.classList.add('active');
+        // Charger dynamiquement le contenu associé au sous-onglet sans recharger la page
+        switch (subTabName) {
+            case 'vacation-requests':
+                if (typeof loadAllRequests === 'function') loadAllRequests();
+                break;
+            case 'sickness-declarations':
+                if (typeof loadAdminSicknessDeclarations === 'function') loadAdminSicknessDeclarations();
+                break;
+            case 'admin-documents':
+                if (typeof loadAdminDocuments === 'function') loadAdminDocuments();
+                break;
+            case 'user-vacation-requests':
+                if (typeof loadUserRequests === 'function') loadUserRequests();
+                break;
+            case 'user-sickness-declarations':
+                (async () => {
+                    try {
+                        if (typeof loadSicknessDeclarations === 'function') {
+                            const html = await loadSicknessDeclarations();
+                            const div = document.getElementById('user-sickness-declarations-list');
+                            if (div) div.innerHTML = html;
+                        }
+                    } catch (e) {
+                        const div = document.getElementById('user-sickness-declarations-list');
+                        if (div) div.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+                    }
+                })();
+                break;
+        }
     }
 }
 
