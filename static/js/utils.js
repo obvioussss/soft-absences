@@ -40,8 +40,14 @@ function showTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // Activer l'onglet cliqué
-    event.target.classList.add('active');
+    // Activer l'onglet correspondant au tabName (sans dépendre de event)
+    const navTabs = document.querySelectorAll('.nav-tab');
+    navTabs.forEach(tab => {
+        const onclickAttr = tab.getAttribute('onclick') || '';
+        if (onclickAttr.includes(`showTab('${tabName}')`) || onclickAttr.includes(`showTab(\"${tabName}\")`)) {
+            tab.classList.add('active');
+        }
+    });
     
     // Afficher le contenu correspondant
     const content = document.getElementById(tabName);
@@ -83,8 +89,14 @@ function showSubTab(subTabName) {
         tab.classList.remove('active');
     });
     
-    // Activer le sous-onglet cliqué
-    event.target.classList.add('active');
+    // Activer le sous-onglet correspondant (sans dépendre de event)
+    const subTabs = document.querySelectorAll('.sub-tab');
+    subTabs.forEach(tab => {
+        const onclickAttr = tab.getAttribute('onclick') || '';
+        if (onclickAttr.includes(`showSubTab('${subTabName}')`) || onclickAttr.includes(`showSubTab(\"${subTabName}\")`)) {
+            tab.classList.add('active');
+        }
+    });
     
     // Afficher le contenu correspondant
     const content = document.getElementById(subTabName);
