@@ -8,8 +8,22 @@ _pg_conn = None
 def _init_db_postgres(db_url: str):
     """Initialise (si besoin) la base Postgres (Neon) et renvoie une connexion réutilisable."""
     global _pg_conn
+    # Si une connexion existe mais est fermée ou invalide, réinitialiser
     if _pg_conn is not None:
-        return _pg_conn
+        try:
+            if getattr(_pg_conn, "closed", False):
+                _pg_conn = None
+            else:
+                cur = _pg_conn.cursor()
+                cur.execute("SELECT 1")
+                cur.close()
+                return _pg_conn
+        except Exception:
+            try:
+                _pg_conn.close()
+            except Exception:
+                pass
+            _pg_conn = None
     try:
         import psycopg
         _pg_conn = psycopg.connect(db_url, autocommit=True)
