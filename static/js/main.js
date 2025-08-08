@@ -172,6 +172,20 @@ async function apiCall(endpoint, options = {}) {
         }
         return {};
     }
+    // Gestion centralisée des erreurs renvoyées en JSON (même si HTTP 200)
+    const lowerError = (data && typeof data === 'object' && (data.error || data.detail))
+        ? String(data.error || data.detail).toLowerCase()
+        : '';
+    if (lowerError.includes('forbidden') || lowerError.includes('unauthorized')) {
+        // Session expirée / token invalide → forcer une reconnexion propre
+        try { localStorage.removeItem('authToken'); localStorage.removeItem('currentUser'); } catch {}
+        authToken = null; currentUser = null;
+        // Afficher l'écran d'auth et masquer le contenu
+        const auth = document.getElementById('auth-section');
+        const main = document.getElementById('main-content');
+        if (auth && main) { auth.style.display = 'block'; main.style.display = 'none'; }
+        throw new Error('Session expirée, veuillez vous reconnecter.');
+    }
     if (!response.ok) {
         const msg = data?.detail || data?.error || raw || 'Erreur API';
         throw new Error(typeof msg === 'string' ? msg : 'Erreur API');

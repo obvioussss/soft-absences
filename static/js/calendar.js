@@ -83,22 +83,14 @@ class Calendar {
 
         // Charger les événements du mois
         try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/calendar/admin?year=${this.currentYear}&month=${this.currentMonth + 1}`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
+            const data = await apiCall(`/calendar/admin?year=${this.currentYear}&month=${this.currentMonth + 1}`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
-
-            if (!response.ok) {
-                throw new Error('Erreur lors du chargement du calendrier');
-            }
-
-            const data = await response.json();
             this.events = Array.isArray(data) ? data : [];
             this.renderMonthlyCalendar();
         } catch (error) {
             console.error('Erreur:', error);
-            showAlert('Erreur lors du chargement du calendrier', 'error');
+            showAlert(error.message || 'Erreur lors du chargement du calendrier', 'error');
         }
     }
 
@@ -112,26 +104,15 @@ class Calendar {
 
         // Charger les événements de l'année et le résumé
         try {
-            const [eventsResponse, summaryResponse] = await Promise.all([
-                fetch(`${CONFIG.API_BASE_URL}/calendar/user?year=${this.currentYear}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
+            const [data, summary] = await Promise.all([
+                apiCall(`/calendar/user?year=${this.currentYear}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 }),
-                fetch(`${CONFIG.API_BASE_URL}/calendar/summary?year=${this.currentYear}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
+                apiCall(`/calendar/summary?year=${this.currentYear}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 })
             ]);
-
-            if (!eventsResponse.ok || !summaryResponse.ok) {
-                throw new Error('Erreur lors du chargement du calendrier');
-            }
-
-            const data = await eventsResponse.json();
             this.events = Array.isArray(data) ? data : [];
-            const summary = await summaryResponse.json();
             
             // Afficher le résumé
             const summaryText = `${summary.used_leave_days}/${summary.total_leave_days} jours utilisés - ${summary.remaining_leave_days} jours restants`;
@@ -140,7 +121,7 @@ class Calendar {
             this.renderYearlyCalendar();
         } catch (error) {
             console.error('Erreur:', error);
-            showAlert('Erreur lors du chargement du calendrier', 'error');
+            showAlert(error.message || 'Erreur lors du chargement du calendrier', 'error');
         }
     }
 
