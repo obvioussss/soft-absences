@@ -173,7 +173,7 @@ def get_user_from_auth_header(headers):
         email = payload['sub']
         conn = init_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = ?', (email,))
+                        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = %s', (email,))
         row = cursor.fetchone()
         conn.close()
         if not row:
@@ -315,7 +315,7 @@ def handle_absence_requests(current_user=None):
                        u.id, u.first_name, u.last_name, u.email
                 FROM absence_requests a
                 JOIN users u ON a.user_id = u.id
-                WHERE a.user_id = ?
+                WHERE a.user_id = %s
                 ORDER BY a.created_at DESC
             ''', (current_user['id'],))
         else:
@@ -369,7 +369,7 @@ def handle_get_user(user_id: int):
     try:
         conn = init_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days, is_active FROM users WHERE id = ?', (user_id,))
+        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days, is_active FROM users WHERE id = %s', (user_id,))
         row = cursor.fetchone()
         conn.close()
         if not row:
@@ -391,13 +391,13 @@ def handle_user_absence_summary(user_id: int):
         from datetime import date
         conn = init_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT first_name, last_name, email, annual_leave_days FROM users WHERE id = ?', (user_id,))
+        cursor.execute('SELECT first_name, last_name, email, annual_leave_days FROM users WHERE id = %s', (user_id,))
         u = cursor.fetchone()
         if not u:
             conn.close()
             return {"error": "Utilisateur non trouvé"}
         # Statistiques basiques
-        cursor.execute('SELECT start_date, end_date, type, status, reason, created_at FROM absence_requests WHERE user_id = ? ORDER BY created_at DESC', (user_id,))
+        cursor.execute('SELECT start_date, end_date, type, status, reason, created_at FROM absence_requests WHERE user_id = %s ORDER BY created_at DESC', (user_id,))
         rows = cursor.fetchall()
         total_days = 0
         vacation_days = 0
@@ -455,7 +455,7 @@ def handle_sickness_list(current_user):
                 SELECT s.id, s.start_date, s.end_date, s.description, s.pdf_filename, s.email_sent, s.viewed_by_admin, s.created_at,
                        u.id, u.email, u.first_name, u.last_name
                 FROM sickness_declarations s JOIN users u ON s.user_id = u.id
-                WHERE s.user_id = ?
+                WHERE s.user_id = %s
                 ORDER BY s.created_at DESC
             ''', (current_user['id'] if current_user else -1,))
         rows = cursor.fetchall()
@@ -498,7 +498,7 @@ def handle_dashboard(current_user):
         # Requêtes approuvées de type VACANCES pour calculer les jours utilisés
         cursor.execute('''
             SELECT start_date, end_date FROM absence_requests
-            WHERE user_id = ? AND status = 'APPROUVE' AND type = 'VACANCES'
+            WHERE user_id = %s AND status = 'APPROUVE' AND type = 'VACANCES'
         ''', (current_user['id'],))
         approved = cursor.fetchall()
 
@@ -514,7 +514,7 @@ def handle_dashboard(current_user):
             SELECT 
                 SUM(CASE WHEN status = 'EN_ATTENTE' THEN 1 ELSE 0 END),
                 SUM(CASE WHEN status = 'APPROUVE' THEN 1 ELSE 0 END)
-            FROM absence_requests WHERE user_id = ?
+            FROM absence_requests WHERE user_id = %s
         ''', (current_user['id'],))
         counts = cursor.fetchone() or (0, 0)
 
@@ -556,9 +556,9 @@ def handle_calendar_admin(year: int, month: int):
             FROM absence_requests a
             JOIN users u ON a.user_id = u.id
             WHERE (
-                (a.start_date BETWEEN ? AND ?) OR
-                (a.end_date BETWEEN ? AND ?) OR
-                (a.start_date <= ? AND a.end_date >= ?)
+                (a.start_date BETWEEN %s AND %s) OR
+                (a.end_date BETWEEN %s AND %s) OR
+                (a.start_date <= %s AND a.end_date >= %s)
             )
         ''', (start_date, end_date, start_date, end_date, start_date, end_date))
         requests = cursor.fetchall()
@@ -584,9 +584,9 @@ def handle_calendar_admin(year: int, month: int):
             FROM sickness_declarations s
             JOIN users u ON s.user_id = u.id
             WHERE (
-                (s.start_date BETWEEN ? AND ?) OR
-                (s.end_date BETWEEN ? AND ?) OR
-                (s.start_date <= ? AND s.end_date >= ?)
+                (s.start_date BETWEEN %s AND %s) OR
+                (s.end_date BETWEEN %s AND %s) OR
+                (s.start_date <= %s AND s.end_date >= %s)
             )
         ''', (start_date, end_date, start_date, end_date, start_date, end_date))
         sicks = cursor.fetchall()
@@ -622,10 +622,10 @@ def handle_calendar_user(year: int, current_user):
         cursor.execute('''
             SELECT id, type, start_date, end_date, status, reason
             FROM absence_requests
-            WHERE user_id = ? AND (
-                (start_date BETWEEN ? AND ?) OR
-                (end_date BETWEEN ? AND ?) OR
-                (start_date <= ? AND end_date >= ?)
+            WHERE user_id = %s AND (
+                (start_date BETWEEN %s AND %s) OR
+                (end_date BETWEEN %s AND %s) OR
+                (start_date <= %s AND end_date >= %s)
             )
         ''', (current_user['id'], start_date, end_date, start_date, end_date, start_date, end_date))
         rows = cursor.fetchall()
@@ -648,10 +648,10 @@ def handle_calendar_user(year: int, current_user):
         cursor.execute('''
             SELECT id, start_date, end_date, description, email_sent
             FROM sickness_declarations
-            WHERE user_id = ? AND (
-                (start_date BETWEEN ? AND ?) OR
-                (end_date BETWEEN ? AND ?) OR
-                (start_date <= ? AND end_date >= ?)
+            WHERE user_id = %s AND (
+                (start_date BETWEEN %s AND %s) OR
+                (end_date BETWEEN %s AND %s) OR
+                (start_date <= %s AND end_date >= %s)
             )
         ''', (current_user['id'], start_date, end_date, start_date, end_date, start_date, end_date))
         srows = cursor.fetchall()
@@ -685,8 +685,8 @@ def handle_calendar_summary(year: int, current_user):
         end_date = date(year, 12, 31)
         cursor.execute('''
             SELECT start_date, end_date FROM absence_requests
-            WHERE user_id = ? AND status = 'APPROUVE' AND type = 'VACANCES'
-              AND start_date <= ? AND end_date >= ?
+            WHERE user_id = %s AND status = 'APPROUVE' AND type = 'VACANCES'
+              AND start_date <= %s AND end_date >= %s
         ''', (current_user['id'], end_date, start_date))
         rows = cursor.fetchall()
         used_days = 0
@@ -724,7 +724,7 @@ def handle_login(data):
             return {"error": "Base de données non initialisée"}
             
         cursor = conn.cursor()
-        cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = ?', (email,))
+            cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = %s', (email,))
         user = cursor.fetchone()
         conn.close()
         
@@ -906,7 +906,7 @@ class handler(BaseHTTPRequestHandler):
                         seg = path.strip('/').split('/')
                         decl_id = int(seg[1])
                         conn = init_db(); cursor = conn.cursor()
-                        cursor.execute('SELECT pdf_path, pdf_filename, pdf_data, user_id FROM sickness_declarations WHERE id = ?', (decl_id,))
+                        cursor.execute('SELECT pdf_path, pdf_filename, pdf_data, user_id FROM sickness_declarations WHERE id = %s', (decl_id,))
                         row = cursor.fetchone(); conn.close()
                         if not row:
                             self.send_response(404); self.end_headers(); return
@@ -1062,7 +1062,7 @@ class handler(BaseHTTPRequestHandler):
                 try:
                     conn = init_db()
                     cursor = conn.cursor()
-                    cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = ?', (email,))
+                    cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = %s', (email,))
                     user = cursor.fetchone()
                     conn.close()
                 except Exception:
@@ -1097,7 +1097,7 @@ class handler(BaseHTTPRequestHandler):
                             cursor = conn.cursor()
                             cursor.execute('''
                                 INSERT INTO absence_requests (user_id, type, start_date, end_date, reason, status)
-                                VALUES (?, ?, ?, ?, ?, 'EN_ATTENTE')
+                                VALUES (%s, %s, %s, %s, %s, 'EN_ATTENTE')
                             ''', (current_user['id'], abs_type, start_date, end_date, reason))
                             conn.commit()
                             new_id = cursor.lastrowid
@@ -1168,15 +1168,15 @@ class handler(BaseHTTPRequestHandler):
                             conn = init_db(); cursor = conn.cursor()
                             # Essayer d'insérer aussi les octets (pdf_data)
                             try:
-                                cursor.execute('''
-                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
-                                ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path, file_bytes))
+                            cursor.execute('''
+                                INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
+                            ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path, file_bytes))
                             except Exception:
                                 # fallback si colonne absente
                                 cursor.execute('''
                                     INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
-                                    VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+                                    VALUES (%s, %s, %s, %s, %s, %s, 0, 0)
                                 ''', (current_user['id'], start_date, end_date, description, pdf_filename, pdf_path))
                             conn.commit(); new_id = cursor.lastrowid
 
@@ -1192,7 +1192,7 @@ class handler(BaseHTTPRequestHandler):
                                 recipients.append(current_user['email'])
                                 ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>", attachment_path=pdf_path, attachment_filename=pdf_filename)
                                 if ok:
-                                    cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=?', (new_id,))
+                        cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=%s', (new_id,))
                                     conn.commit()
                             except Exception:
                                 pass
@@ -1241,18 +1241,18 @@ class handler(BaseHTTPRequestHandler):
                             conn = init_db(); cursor = conn.cursor()
                             # Essayer d'enregistrer aussi les octets
                             try:
-                                cursor.execute('''
+                            cursor.execute('''
                                     INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, pdf_data, email_sent, viewed_by_admin)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)
+                                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0)
                                 ''', (user_id, start_date, end_date, description, original_name, file_path, file_bytes))
                             except Exception:
-                                cursor.execute('''
-                                    INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
-                                    VALUES (?, ?, ?, ?, ?, ?, 0, 0)
-                                ''', (user_id, start_date, end_date, description, original_name, file_path))
+                        cursor.execute('''
+                            INSERT INTO sickness_declarations (user_id, start_date, end_date, description, pdf_filename, pdf_path, email_sent, viewed_by_admin)
+                            VALUES (%s, %s, %s, %s, %s, %s, 0, 0)
+                        ''', (user_id, start_date, end_date, description, original_name, file_path))
                             conn.commit(); new_id = cursor.lastrowid
                             # Récupérer email user + admins
-                            cursor.execute('SELECT email, first_name, last_name FROM users WHERE id = ?', (user_id,))
+                            cursor.execute('SELECT email, first_name, last_name FROM users WHERE id = %s', (user_id,))
                             urow = cursor.fetchone() or (None, '', '')
                             user_email = urow[0]
                             cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
@@ -1265,7 +1265,7 @@ class handler(BaseHTTPRequestHandler):
                             body = f"Arrêt maladie du {start_date} au {end_date}. Description: {description or '—'}"
                             ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>", attachment_path=file_path, attachment_filename=original_name)
                             if ok:
-                                cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=?', (new_id,))
+                                cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=%s', (new_id,))
                                 conn.commit()
                             conn.close()
                             response = {"id": new_id, "start_date": start_date, "end_date": end_date, "description": description, "email_sent": bool(ok), "pdf_filename": original_name}
@@ -1282,11 +1282,11 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     try:
                         conn = init_db(); cursor = conn.cursor()
-                        cursor.execute('UPDATE sickness_declarations SET viewed_by_admin=1 WHERE id=?', (decl_id,))
+                        cursor.execute('UPDATE sickness_declarations SET viewed_by_admin=1 WHERE id=%s', (decl_id,))
                         # Récupérer infos pour email
                         cursor.execute('''
                             SELECT s.start_date, s.end_date, u.email, u.first_name, u.last_name
-                            FROM sickness_declarations s JOIN users u ON s.user_id = u.id WHERE s.id = ?
+                             FROM sickness_declarations s JOIN users u ON s.user_id = u.id WHERE s.id = %s
                         ''', (decl_id,))
                         r = cursor.fetchone()
                         conn.commit(); conn.close()
@@ -1305,7 +1305,7 @@ class handler(BaseHTTPRequestHandler):
                         conn = init_db(); cursor = conn.cursor()
                         cursor.execute('''
                             INSERT INTO users (email, first_name, last_name, password_hash, role)
-                            VALUES (?, ?, ?, ?, ?)
+                            VALUES (%s, %s, %s, %s, %s)
                         ''', (
                             payload.get('email'),
                             payload.get('first_name'),
@@ -1364,7 +1364,7 @@ class handler(BaseHTTPRequestHandler):
                 admin_comment = (data or {}).get('admin_comment')
                 try:
                     conn = init_db(); cursor = conn.cursor()
-                    cursor.execute('UPDATE absence_requests SET status = ?, admin_comment = ? WHERE id = ?', (new_status, admin_comment, request_id))
+                cursor.execute('UPDATE absence_requests SET status = %s, admin_comment = %s WHERE id = %s', (new_status, admin_comment, request_id))
                     conn.commit(); conn.close()
                     response = {"id": request_id, "status": (data or {}).get('status'), "admin_comment": admin_comment}
                 except Exception as e:
@@ -1423,7 +1423,7 @@ class handler(BaseHTTPRequestHandler):
                     user_id = 0
                 try:
                     conn = init_db(); cursor = conn.cursor()
-                    cursor.execute('DELETE FROM users WHERE id = ?', (user_id,))
+                cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
                     conn.commit(); conn.close()
                     response = {"message": "Utilisateur supprimé"}
                 except Exception as e:
