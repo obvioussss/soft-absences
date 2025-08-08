@@ -173,7 +173,7 @@ def get_user_from_auth_header(headers):
         email = payload['sub']
         conn = init_db()
         cursor = conn.cursor()
-                        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = %s', (email,))
+        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = %s', (email,))
         row = cursor.fetchone()
         conn.close()
         if not row:
