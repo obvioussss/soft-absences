@@ -72,11 +72,12 @@ async function loadAllRequests() {
         
         let html = '<h3>🏖️ Demandes de Vacances</h3>';
         
-        // Statistiques rapides
-        const totalRequests = requests.length;
-        const pendingRequests = requests.filter(r => r.status === 'en_attente').length;
-        const approvedRequests = requests.filter(r => r.status === 'approuve').length;
-        const rejectedRequests = requests.filter(r => r.status === 'refuse').length;
+        // Statistiques rapides (sécurisées)
+        const arr = Array.isArray(requests) ? requests : [];
+        const totalRequests = arr.length;
+        const pendingRequests = arr.filter(r => r.status === 'en_attente').length;
+        const approvedRequests = arr.filter(r => r.status === 'approuve').length;
+        const rejectedRequests = arr.filter(r => r.status === 'refuse').length;
         
         html += `
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -103,7 +104,7 @@ async function loadAllRequests() {
         
         html += '<table class="table"><thead><tr><th>👤 Utilisateur</th><th>📅 Période</th><th>📝 Raison</th><th>📊 Statut</th><th>🕐 Créée le</th><th>⚡ Actions</th></tr></thead><tbody>';
         
-        requests.forEach(request => {
+        arr.forEach(request => {
             const startDate = formatDateSafe(request.start_date);
             const endDate = formatDateSafe(request.end_date);
             const createdDate = formatDateSafe(request.created_at);
