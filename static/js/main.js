@@ -145,3 +145,36 @@ window.hideNewRequestForm = hideNewRequestForm;
 window.loadUserRequests = loadUserRequests;
 window.loadRequests = loadRequests;
 window.showSubTab = showSubTab;
+
+async function apiCall(endpoint, options = {}) {
+    const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(options.headers || {})
+        },
+        ...options
+    };
+
+    if (authToken) {
+        config.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(url, config);
+    const raw = await response.text();
+    let data = {};
+    try {
+        data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+        if (!response.ok) {
+            throw new Error(raw?.slice(0, 300) || 'Erreur API');
+        }
+        return {};
+    }
+    if (!response.ok) {
+        const msg = data?.detail || data?.error || raw || 'Erreur API';
+        throw new Error(typeof msg === 'string' ? msg : 'Erreur API');
+    }
+    return data;
+}
