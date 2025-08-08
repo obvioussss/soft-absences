@@ -123,9 +123,14 @@ def init_db():
         or os.getenv('NEON_DATABASE_URL', '').strip()
     )
     if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
-        pg = _init_db_postgres(db_url)
-        if pg is not None:
-            return pg
+        # S'assurer que le schéma est prêt (connexion globale d'initialisation)
+        _init_db_postgres(db_url)
+        try:
+            import psycopg
+            # IMPORTANT: retourner une NOUVELLE connexion par requête
+            return psycopg.connect(db_url, autocommit=True)
+        except Exception:
+            pass
 
     # Fallback SQLite fichier (persistance locale de l'instance)
     db_file = os.getenv('DB_FILE', '/tmp/soft_absences.db')
