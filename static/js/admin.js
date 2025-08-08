@@ -59,6 +59,12 @@ async function loadAllRequests() {
     try {
         const requests = await apiCall('/absence-requests/all');
         
+        if (!Array.isArray(requests)) {
+            const msg = (requests && (requests.error || requests.detail)) ? (requests.error || requests.detail) : 'Aucune donnée disponible';
+            requestsList.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+            return;
+        }
+        
         if (requests.length === 0) {
             requestsList.innerHTML = '<div class="alert alert-info">Aucune demande de vacances en attente.</div>';
             return;
