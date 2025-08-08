@@ -309,12 +309,13 @@ document.addEventListener('DOMContentLoaded', function() {
         adminAbsenceForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const reasonEl = document.getElementById('admin-reason');
             const formData = {
                 user_id: parseInt(document.getElementById('admin-absence-user').value),
                 type: document.getElementById('admin-absence-type').value,
                 start_date: document.getElementById('admin-start-date').value,
                 end_date: document.getElementById('admin-end-date').value,
-                reason: document.getElementById('admin-reason').value || null,
+                reason: reasonEl ? (reasonEl.value || null) : null,
                 admin_comment: document.getElementById('admin-comment').value || null,
                 status: 'approuve'
             };
