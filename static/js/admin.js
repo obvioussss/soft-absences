@@ -119,9 +119,10 @@ async function loadAllRequests() {
                 actions = '<span style="color: #666;">—</span>';
             }
             
+            const userDisplay = request.user ? `<strong>${request.user.first_name} ${request.user.last_name}</strong><br><small style="color: #666;">${request.user.email}</small>` : '<span style="color:#e74c3c">Utilisateur inconnu</span>';
             html += `
                 <tr style="${rowStyle}">
-                    <td><strong>${request.user.first_name} ${request.user.last_name}</strong><br><small style="color: #666;">${request.user.email}</small></td>
+                    <td>${userDisplay}</td>
                     <td><strong>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</strong></td>
                     <td>${request.reason ? `<em>"${request.reason}"</em>` : '<span style="color: #999;">Non spécifiée</span>'}</td>
                     <td><span class="status-badge status-${request.status}">${request.status.replace('_', ' ')}</span></td>

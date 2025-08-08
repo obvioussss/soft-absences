@@ -121,11 +121,16 @@ async function loadSicknessDeclarations() {
                 const endDate = new Date(declaration.end_date).toLocaleDateString('fr-FR');
                 const createdDate = new Date(declaration.created_at).toLocaleDateString('fr-FR');
                 
+                const pdfCell = declaration.pdf_filename ? `
+                    ✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf" target="_blank" rel="noopener">${declaration.pdf_filename}</a>
+                    <button class="btn btn-sm" onclick="previewPdf(${declaration.id})">👁️ Voir</button>
+                ` : '❌ Aucun fichier';
+                
                 html += `
                     <tr>
                         <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
                         <td>${declaration.description || 'Non spécifiée'}</td>
-                        <td>${declaration.pdf_filename ? `✅ ${declaration.pdf_filename}` : '❌ Aucun fichier'}</td>
+                        <td>${pdfCell}</td>
                         <td><span class="status-badge ${declaration.email_sent ? 'status-approuve' : 'status-refuse'}">${declaration.email_sent ? 'Envoyé' : 'Non envoyé'}</span></td>
                         <td>${createdDate}</td>
                     </tr>
@@ -139,6 +144,17 @@ async function loadSicknessDeclarations() {
         
     } catch (error) {
         return `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Prévisualisation PDF dans une popup (modal simple)
+function previewPdf(declarationId) {
+    const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${declarationId}/pdf`;
+    // Ouvre dans un nouvel onglet si le navigateur bloque les modales
+    const w = window.open(url, '_blank');
+    if (!w) {
+        // fallback si popups bloquées
+        window.location.href = url;
     }
 }
 

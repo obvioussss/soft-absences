@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session
 from typing import Optional
 
@@ -90,6 +90,33 @@ async def create_sickness_declaration(
         raise HTTPException(status_code=400, detail=f"Erreur lors de l'upload du fichier: {str(e)}")
     
     return db_declaration
+
+@router.get("/{declaration_id}/pdf")
+async def download_sickness_pdf(
+    declaration_id: int,
+    current_user: models.User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Servir le PDF d'une déclaration en affichage inline"""
+    declaration = crud.get_sickness_declaration(db, declaration_id)
+    if not declaration:
+        raise HTTPException(status_code=404, detail="Déclaration non trouvée")
+    if current_user.role != models.UserRole.ADMIN and declaration.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Accès non autorisé")
+    if not declaration.pdf_path:
+        raise HTTPException(status_code=404, detail="Aucun document PDF pour cette déclaration")
+    
+    import os
+    if not os.path.exists(declaration.pdf_path):
+        raise HTTPException(status_code=404, detail="Fichier PDF non trouvé sur le serveur")
+    
+    with open(declaration.pdf_path, 'rb') as f:
+        data = f.read()
+    headers = {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": f"inline; filename=\"{declaration.pdf_filename or 'document.pdf'}\""
+    }
+    return Response(content=data, headers=headers)
 
 @router.get("/{declaration_id}", response_model=schemas.SicknessDeclaration)
 async def read_sickness_declaration(

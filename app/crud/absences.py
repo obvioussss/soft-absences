@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 from datetime import datetime, date
 from typing import Optional, List
@@ -12,14 +12,18 @@ def get_absence_request(db: Session, request_id: int) -> Optional[models.Absence
 
 def get_absence_requests(db: Session, skip: int = 0, limit: int = 100, user_id: Optional[int] = None, status: Optional[models.AbsenceStatus] = None) -> List[models.AbsenceRequest]:
     """Récupérer les demandes d'absence avec filtres optionnels"""
-    query = db.query(models.AbsenceRequest)
+    # Charger les relations nécessaires pour la sérialisation (évite user=None côté frontend)
+    query = db.query(models.AbsenceRequest).options(
+        joinedload(models.AbsenceRequest.user),
+        joinedload(models.AbsenceRequest.approved_by)
+    )
     
     if user_id:
         query = query.filter(models.AbsenceRequest.user_id == user_id)
     if status:
         query = query.filter(models.AbsenceRequest.status == status)
     
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(models.AbsenceRequest.created_at.desc()).offset(skip).limit(limit).all()
 
 def create_absence_request(db: Session, request: schemas.AbsenceRequestCreate, user_id: int) -> models.AbsenceRequest:
     """Créer une nouvelle demande d'absence"""
