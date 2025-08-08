@@ -387,6 +387,11 @@ async function showUserAbsenceSummary(userId) {
     
     try {
         const summary = await apiCall(`/users/${userId}/absence-summary`);
+        if (!summary || summary.error || !summary.user) {
+            const message = (summary && (summary.error || summary.detail)) ? (summary.error || summary.detail) : 'Résumé introuvable';
+            summaryDiv.innerHTML = `<div class="alert alert-error">Erreur: ${message}</div>`;
+            return;
+        }
         
         const user = summary.user;
         document.getElementById('user-absence-title').textContent = 
@@ -420,7 +425,7 @@ async function showUserAbsenceSummary(userId) {
             </div>
         `;
         
-        if (summary.recent_absences && summary.recent_absences.length > 0) {
+        if (Array.isArray(summary.recent_absences) && summary.recent_absences.length > 0) {
             html += `
                 <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
                     <h4 style="color: #34495e; margin-bottom: 15px;">📅 Absences récentes</h4>
