@@ -121,7 +121,7 @@ async def get_admin_calendar(
             type=models.AbsenceType.MALADIE,
             status=models.AbsenceStatus.APPROUVE,  # Les déclarations sont automatiquement approuvées
             user_name=f"{declaration.user.first_name} {declaration.user.last_name}",
-            reason=declaration.description,
+            reason=(declaration.pdf_filename or declaration.description),
             event_source="sickness_declaration"
         ))
     

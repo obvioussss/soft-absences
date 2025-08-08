@@ -5,9 +5,15 @@ from fastapi import UploadFile, HTTPException
 import aiofiles
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 class FileService:
     def __init__(self):
-        self.upload_dir = Path("uploads/sickness_declarations")
+        # Utiliser un répertoire d'upload compatible Vercel (/tmp) en production
+        env = os.getenv("ENVIRONMENT", "development")
+        default_dir = "/tmp/sickness_declarations" if env == "production" else "uploads/sickness_declarations"
+        self.upload_dir = Path(os.getenv("UPLOAD_DIR", default_dir))
         self.upload_dir.mkdir(parents=True, exist_ok=True)
         self.allowed_extensions = {".pdf"}
         self.max_file_size = 10 * 1024 * 1024  # 10MB

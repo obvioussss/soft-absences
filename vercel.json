@@ -15,6 +15,7 @@
   "env": {
     "ENVIRONMENT": "production",
     "DB_FILE": "/tmp/soft_absences.db",
-    "DATABASE_URL": ""
+    "DATABASE_URL": "",
+    "UPLOAD_DIR": "/tmp/sickness_declarations"
   }
 }
