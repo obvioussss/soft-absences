@@ -49,8 +49,8 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ### 4. Tester le déploiement
 
-1. **Vérifier l'URL de déploiement** (ex: `https://soft-abscences.vercel.app`)
-2. **Tester l'endpoint de santé :** `https://soft-abscences.vercel.app/health`
+1. **Vérifier l'URL de déploiement** (ex: `https://soft-absences.vercel.app`)
+2. **Tester l'endpoint de santé :** `https://soft-absences.vercel.app/health`
 3. **Tester l'authentification :**
    - Email: `admin@example.com`
    - Mot de passe: `password123`
@@ -86,8 +86,8 @@ CORS_ORIGINS=https://votre-domaine.com
 
 ## 🎯 URLs importantes
 
-- **Application :** `https://soft-abscences.vercel.app`
-- **Health check :** `https://soft-abscences.vercel.app/health`
+- **Application :** `https://soft-absences.vercel.app`
+- **Health check :** `https://soft-absences.vercel.app/health`
 - **Dashboard Vercel :** Dashboard Vercel pour monitoring
 
 ---
@@ -146,4 +146,4 @@ Si vous rencontrez des problèmes :
 
 Votre application est maintenant déployée et accessible en ligne ! 
 
-**URL de votre application :** `https://soft-abscences.vercel.app` 
+**URL de votre application :** `https://soft-absences.vercel.app`

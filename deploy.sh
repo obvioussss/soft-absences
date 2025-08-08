@@ -102,7 +102,7 @@ else
     print_message "Vercel CLI détecté. Démarrage du déploiement..."
     
     # Vérifier si le projet est déjà configuré
-    PROJECT_NAME="soft-abscences"
+PROJECT_NAME="soft-absences"
     TEAM_ID="obvious-projects-8348485a"
     print_message "Lien forcé vers $TEAM_ID/$PROJECT_NAME"
     npx vercel link --yes --project "$PROJECT_NAME" --scope "$TEAM_ID"
@@ -124,7 +124,7 @@ echo "   - SECRET_KEY=votre-clé-secrète-sécurisée"
 echo "3. Tester l'authentification et les fonctionnalités principales"
 echo ""
 echo "🔗 URLs importantes :"
-echo "- Application : https://soft-abscences.vercel.app"
-echo "- Health check : https://soft-abscences.vercel.app/health"
+echo "- Application : https://soft-absences.vercel.app"
+echo "- Health check : https://soft-absences.vercel.app/health"
 echo ""
 print_success "Déploiement réussi ! 🚀" 

@@ -56,8 +56,7 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 ## 🎯 URLs après déploiement
 
-- **Application :** `https://soft-abscences.vercel.app`
-- **Health check :** `https://soft-abscences.vercel.app/health`
+Remplacé par le nouveau projet Vercel.
 - **Dashboard Vercel :** Dashboard Vercel pour monitoring
 
 ---
