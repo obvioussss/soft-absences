@@ -192,6 +192,7 @@ def get_static_content(file_path):
                                             Glissez-déposez le PDF ici, ou cliquez pour sélectionner.
                                             <input type="file" id="admin-absence-pdf" accept=".pdf" style="display:none;">
                                         </div>
+                                        <small id="admin-absence-pdf-name" style="display:block; color:#856404; margin-top:6px;">Aucun fichier sélectionné</small>
                                         <small style="display:block; color:#856404; margin-top:6px;">PDF uniquement, 10MB max</small>
                                     </div>
                                     <div style="text-align: right; margin-top: 20px;">
@@ -392,6 +393,7 @@ def get_static_content(file_path):
                 <div class="sub-tabs">
                     <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Vacances</button>
                     <button class="sub-tab" onclick="showSubTab('sickness-declarations')">🏥 Déclarations de Maladie</button>
+                    <button class="sub-tab" onclick="showSubTab('admin-documents')">📄 Documents</button>
                 </div>
                 
                 <!-- Contenu des sous-onglets -->
@@ -401,6 +403,10 @@ def get_static_content(file_path):
                 
                 <div id="sickness-declarations" class="sub-tab-content">
                     <div id="admin-sickness-list" class="loading">Chargement...</div>
+                </div>
+
+                <div id="admin-documents" class="sub-tab-content">
+                    <div id="admin-documents-list" class="loading">Chargement...</div>
                 </div>
             </div>
         </div>
@@ -1985,6 +1991,7 @@ async function showAdminAbsenceForm() {
         const pdfGroup = document.getElementById('admin-absence-pdf-group');
         const dropzone = document.getElementById('admin-absence-dropzone');
         const fileInput = document.getElementById('admin-absence-pdf');
+        const fileName = document.getElementById('admin-absence-pdf-name');
         const syncVisibility = () => { if (pdfGroup) pdfGroup.style.display = typeSelect.value === 'maladie' ? 'block' : 'none'; };
         if (typeSelect) typeSelect.onchange = syncVisibility;
         syncVisibility();
@@ -1996,8 +2003,10 @@ async function showAdminAbsenceForm() {
                 e.preventDefault();
                 if (e.dataTransfer.files && e.dataTransfer.files[0]) {
                     fileInput.files = e.dataTransfer.files;
+                    if (fileName) fileName.textContent = e.dataTransfer.files[0].name;
                 }
             };
+            fileInput.onchange = () => { if (fileName && fileInput.files && fileInput.files[0]) fileName.textContent = fileInput.files[0].name; };
         }
         
     } catch (error) {
@@ -2297,6 +2306,40 @@ async function loadAdminSicknessDeclarations() {
         
     } catch (error) {
         sicknessListDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
+    }
+}
+
+// Documents (liste consolidée des PDFs de maladie)
+async function loadAdminDocuments() {
+    const container = document.getElementById('admin-documents-list');
+    if (!container) return;
+    try {
+        container.innerHTML = '<div class="loading">Chargement...</div>';
+        const declarations = await apiCall('/sickness-declarations/');
+        const withPdf = declarations.filter(d => d.pdf_filename);
+        if (withPdf.length === 0) {
+            container.innerHTML = '<div class="alert alert-info">Aucun document disponible.</div>';
+            return;
+        }
+        let html = '<h3>📄 Documents déposés</h3>';
+        html += '<table class="table"><thead><tr><th>Nom du fichier</th><th>Utilisateur</th><th>Période</th><th>Créé le</th><th>Action</th></tr></thead><tbody>';
+        withPdf.forEach(d => {
+            const startDate = formatDateSafe(d.start_date);
+            const endDate = formatDateSafe(d.end_date);
+            const createdDate = formatDateSafe(d.created_at);
+            const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${d.id}/pdf`;
+            html += `<tr>
+                <td>${d.pdf_filename}</td>
+                <td>${d.user ? `${d.user.first_name} ${d.user.last_name} (${d.user.email})` : '—'}</td>
+                <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
+                <td>${createdDate}</td>
+                <td><a class="btn" href="${url}" target="_blank" rel="noopener">Ouvrir</a></td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="alert alert-error">Erreur: ${e.message}</div>`;
     }
 }
 
@@ -2782,6 +2825,7 @@ function showTab(tabName) {
                 // Charger les deux types de demandes
                 loadAllRequests();
                 loadAdminSicknessDeclarations();
+                (async () => { try { await loadAdminDocuments(); } catch {} })();
                 break;
         }
     }

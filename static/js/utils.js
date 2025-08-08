@@ -102,6 +102,7 @@ function showTab(tabName) {
                 // Charger les deux types de demandes
                 loadAllRequests();
                 loadAdminSicknessDeclarations();
+                (async () => { try { await loadAdminDocuments(); } catch {} })();
                 break;
         }
     }
