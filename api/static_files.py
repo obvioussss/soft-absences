@@ -147,6 +147,10 @@ def get_static_content(file_path):
                                         <strong>Raison:</strong>
                                         <span id="event-reason"></span>
                                     </div>
+                                    <div class="detail-row admin-only" style="display:none; gap:8px;">
+                                        <button id="event-edit-btn" class="btn btn-warning">Modifier</button>
+                                        <button id="event-delete-btn" class="btn btn-danger">Supprimer</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1779,6 +1783,23 @@ class Calendar {
         }
 
         document.getElementById('event-modal').style.display = 'flex';
+
+        // Activer les actions admin pour les demandes d'absence uniquement
+        const isAdmin = currentUser && currentUser.role === 'admin';
+        const actionsRow = document.querySelector('#event-modal .admin-only');
+        const editBtn = document.getElementById('event-edit-btn');
+        const deleteBtn = document.getElementById('event-delete-btn');
+        if (actionsRow && editBtn && deleteBtn) {
+            if (isAdmin && event.event_source === 'absence_request') {
+                actionsRow.style.display = 'flex';
+                editBtn.onclick = () => this.openEditDialog(event);
+                deleteBtn.onclick = () => this.confirmDelete(event);
+            } else {
+                actionsRow.style.display = 'none';
+                editBtn.onclick = null;
+                deleteBtn.onclick = null;
+            }
+        }
     }
 
     
@@ -1787,6 +1808,51 @@ class Calendar {
         // Pour simplifier, on affiche juste le premier événement
         // Dans une vraie app, on pourrait créer une modal spéciale pour plusieurs événements
         this.showEventModal(events[0]);
+    }
+
+    async confirmDelete(event) {
+        if (!confirm('Supprimer cette absence ?')) return;
+        try {
+            await apiCall(`/absence-requests/admin/${event.id}`, { method: 'DELETE' });
+            showAlert('Absence supprimée');
+            closeEventModal();
+            await this.showCalendar();
+            loadAllRequests && loadAllRequests();
+        } catch (e) {
+            showAlert(e.message || 'Erreur suppression', 'error');
+        }
+    }
+
+    openEditDialog(event) {
+        const newStart = prompt('Nouvelle date de début (YYYY-MM-DD):', event.start);
+        if (!newStart) return;
+        const newEnd = prompt('Nouvelle date de fin (YYYY-MM-DD):', event.end);
+        if (!newEnd) return;
+        const newReason = prompt('Raison (optionnel):', event.reason || '');
+        const statusMap = { 'en_attente': 'en_attente', 'approuve': 'approuve', 'refuse': 'refuse' };
+        const newStatus = prompt('Statut (en_attente/approuve/refuse):', event.status);
+        const normalizedStatus = statusMap[newStatus] ? newStatus : undefined;
+        this.updateAbsence(event.id, {
+            start_date: newStart,
+            end_date: newEnd,
+            reason: newReason || null,
+            status: normalizedStatus
+        });
+    }
+
+    async updateAbsence(id, payload) {
+        try {
+            await apiCall(`/absence-requests/admin/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            showAlert('Absence mise à jour');
+            closeEventModal();
+            await this.showCalendar();
+            loadAllRequests && loadAllRequests();
+        } catch (e) {
+            showAlert(e.message || 'Erreur mise à jour', 'error');
+        }
     }
 }
 

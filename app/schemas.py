@@ -84,6 +84,11 @@ class AbsenceRequestAdmin(BaseModel):
     status: AbsenceStatus
     admin_comment: Optional[str] = None
 
+class AdminAbsenceUpdate(AbsenceRequestUpdate):
+    """Mise à jour par un administrateur: peut aussi modifier le statut et le commentaire admin"""
+    status: Optional[AbsenceStatus] = None
+    admin_comment: Optional[str] = None
+
 class AbsenceRequest(AbsenceRequestBase):
     id: int
     user_id: int

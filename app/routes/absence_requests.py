@@ -117,6 +117,50 @@ async def update_absence_request(
     
     return updated_request
 
+@router.put("/admin/{request_id}", response_model=schemas.AbsenceRequest)
+async def admin_update_absence(
+    request_id: int,
+    request_update: schemas.AdminAbsenceUpdate,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Modifier une absence existante (admin): dates, type, raison, statut, commentaire admin"""
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Appliquer les champs standards
+    standard_update = schemas.AbsenceRequestUpdate(
+        type=request_update.type,
+        start_date=request_update.start_date,
+        end_date=request_update.end_date,
+        reason=request_update.reason
+    )
+    updated = crud.update_absence_request(db=db, request_id=request_id, request_update=standard_update)
+    
+    # Appliquer statut/commentaire si fournis
+    if request_update.status is not None or request_update.admin_comment is not None:
+        admin_update = schemas.AbsenceRequestAdmin(
+            status=request_update.status or updated.status,
+            admin_comment=request_update.admin_comment or updated.admin_comment
+        )
+        updated = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
+    
+    return updated
+
+@router.delete("/admin/{request_id}")
+async def admin_delete_absence(
+    request_id: int,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Supprimer une absence (admin)"""
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    crud.delete_absence_request(db=db, request_id=request_id)
+    return {"message": "Absence supprimée"}
+
 @router.put("/{request_id}/status", response_model=schemas.AbsenceRequest)
 async def update_absence_request_status(
     request_id: int,
