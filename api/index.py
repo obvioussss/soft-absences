@@ -1096,6 +1096,60 @@ class handler(BaseHTTPRequestHandler):
                     }
                 else:
                     response = {"error": "Email ou mot de passe incorrect"}
+            elif self.path == '/admin/reset-db':
+                # Endpoint ADMIN-ONLY pour réinitialiser la base en production
+                current_user = get_user_from_auth_header(self.headers)
+                if not current_user or current_user.get('role') != 'admin':
+                    response = {"error": "Forbidden"}
+                else:
+                    try:
+                        conn = init_db(); cursor = conn.cursor()
+                        # Purger dans l'ordre pour respecter les contraintes logiques
+                        try:
+                            cursor.execute('DELETE FROM sickness_declarations')
+                        except Exception:
+                            pass
+                        try:
+                            cursor.execute('DELETE FROM absence_requests')
+                        except Exception:
+                            pass
+                        # Conserver l'admin par défaut, supprimer les autres utilisateurs
+                        try:
+                            cursor.execute("DELETE FROM users WHERE email <> %s", (DEFAULT_ADMIN_EMAIL,))
+                        except Exception:
+                            # Fallback si param style sqlite
+                            try:
+                                cursor.execute("DELETE FROM users WHERE email <> ?", (DEFAULT_ADMIN_EMAIL,))
+                            except Exception:
+                                pass
+                        # S'assurer que l'admin par défaut existe
+                        try:
+                            cursor.execute('SELECT 1 FROM users WHERE email = %s', (DEFAULT_ADMIN_EMAIL,))
+                            row = cursor.fetchone()
+                        except Exception:
+                            row = None
+                        if not row:
+                            try:
+                                cursor.execute(
+                                    'INSERT INTO users (email, first_name, last_name, password_hash, role) VALUES (%s, %s, %s, %s, %s)',
+                                    (DEFAULT_ADMIN_EMAIL, 'Admin', 'System', hash_password('admin123'), 'ADMIN')
+                                )
+                            except Exception:
+                                try:
+                                    cursor.execute(
+                                        'INSERT INTO users (email, first_name, last_name, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+                                        (DEFAULT_ADMIN_EMAIL, 'Admin', 'System', hash_password('admin123'), 'ADMIN')
+                                    )
+                                except Exception:
+                                    pass
+                        try:
+                            conn.commit()
+                        except Exception:
+                            pass
+                        conn.close()
+                        response = {"message": "Database reset completed"}
+                    except Exception as e:
+                        response = {"error": str(e)}
             elif self.path.rstrip('/') == '/absence-requests':
                 # Créer une demande d'absence
                 current_user = get_user_from_auth_header(self.headers)
