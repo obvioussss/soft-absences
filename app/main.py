@@ -27,6 +27,7 @@ def get_cors_origins():
         "http://127.0.0.1:3000", 
         "http://localhost:8080",
         "https://soft-absences.vercel.app",
+        "https://soft-absences-zeta.vercel.app",
         
         "https://*.vercel.app"
     ]
@@ -41,6 +42,7 @@ def get_cors_origins():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
+    allow_origin_regex=r"https://.*\\.vercel\\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
