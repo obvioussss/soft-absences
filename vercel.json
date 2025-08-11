@@ -10,7 +10,7 @@
 
     { "src": "/static/(.*)", "dest": "/static/$1" },
 
-    { "src": "/(users|absence-requests|calendar|sickness-declarations|token|auth|api|health)(.*)", "dest": "/api/index.py" }
+    { "src": "/(users|absence-requests|calendar|sickness-declarations|token|auth|api|health|admin)(.*)", "dest": "/api/index.py" }
   ],
   "env": {
     "ENVIRONMENT": "production",
