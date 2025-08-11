@@ -138,6 +138,55 @@ def init_db():
     os.makedirs(os.path.dirname(db_file), exist_ok=True)
 
     conn = sqlite3.connect(db_file, check_same_thread=False)
+    # Compatibilité paramstyle: adapter automatiquement les requêtes utilisant %s → ? pour SQLite
+    class _CompatCursor:
+        def __init__(self, real_cursor):
+            self._c = real_cursor
+        def execute(self, query, params=None):
+            params = () if params is None else params
+            try:
+                return self._c.execute(query, params)
+            except Exception:
+                try:
+                    return self._c.execute(query.replace('%s', '?'), params)
+                except Exception:
+                    raise
+        def executemany(self, query, seq_of_params):
+            try:
+                return self._c.executemany(query, seq_of_params)
+            except Exception:
+                try:
+                    return self._c.executemany(query.replace('%s', '?'), seq_of_params)
+                except Exception:
+                    raise
+        def fetchone(self):
+            return self._c.fetchone()
+        def fetchall(self):
+            return self._c.fetchall()
+        @property
+        def lastrowid(self):
+            return self._c.lastrowid
+        def close(self):
+            try:
+                self._c.close()
+            except Exception:
+                pass
+
+    class _CompatConnection:
+        def __init__(self, real_conn):
+            self._conn = real_conn
+        def cursor(self):
+            return _CompatCursor(self._conn.cursor())
+        def commit(self):
+            return self._conn.commit()
+        def close(self):
+            try:
+                return self._conn.close()
+            except Exception:
+                pass
+
+    # Remplacer l'objet connexion par un wrapper compatible
+    conn = _CompatConnection(conn)
     cursor = conn.cursor()
     
     # Créer les tables

@@ -188,7 +188,10 @@ def get_user_from_auth_header(headers):
         email = payload['sub']
         conn = init_db()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = %s', (email,))
+        try:
+            cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = %s', (email,))
+        except Exception:
+            cursor.execute('SELECT id, email, first_name, last_name, role, annual_leave_days FROM users WHERE email = ?', (email,))
         row = cursor.fetchone()
         conn.close()
         if not row:
@@ -962,7 +965,7 @@ class handler(BaseHTTPRequestHandler):
                     current_user = get_user_from_auth_header(self.headers)
                     response = handle_absence_requests(current_user)
                 elif path == '/absence-requests/all':
-                    # Pour compat avec le frontend, retourner la même liste
+                    # Pour compat avec le frontend, retourner la même liste sans filtre
                     response = handle_absence_requests(None)
                 elif path == '/api/dashboard':
                     current_user = get_user_from_auth_header(self.headers)
@@ -970,7 +973,12 @@ class handler(BaseHTTPRequestHandler):
                 elif path == '/users/me':
                     # Récupérer l'utilisateur depuis le token
                     user_info = get_user_from_auth_header(self.headers)
-                    response = user_info or {"error": "Unauthorized"}
+                    if user_info and isinstance(user_info, dict):
+                        # Normaliser le rôle en minuscule
+                        user_info['role'] = (user_info.get('role') or '').lower()
+                        response = user_info
+                    else:
+                        response = {"error": "Unauthorized"}
                 elif path.startswith('/users/'):
                     # /users/{id} or /users/{id}/absence-summary
                     segments = path.strip('/').split('/')
@@ -1080,7 +1088,10 @@ class handler(BaseHTTPRequestHandler):
                 try:
                     conn = init_db()
                     cursor = conn.cursor()
-                    cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = %s', (email,))
+                    try:
+                        cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = %s', (email,))
+                    except Exception:
+                        cursor.execute('SELECT id, email, first_name, last_name, password_hash, role FROM users WHERE email = ?', (email,))
                     user = cursor.fetchone()
                     conn.close()
                 except Exception:
