@@ -12,9 +12,6 @@
 
     { "src": "/(users|absence-requests|calendar|sickness-declarations|token|auth|api|health|admin)(.*)", "dest": "/api/index.py" }
   ],
-  "functions": {
-    "api/**/*.py": { "runtime": "python3.12" }
-  },
   "env": {
     "ENVIRONMENT": "production",
     "DB_FILE": "/tmp/soft_absences.db",
