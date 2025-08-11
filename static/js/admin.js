@@ -57,16 +57,20 @@ async function loadAllRequests() {
     const requestsList = document.getElementById('all-requests-list');
     
     try {
-        const requests = await apiCall('/absence-requests/all');
-        
+        let requests = await apiCall('/absence-requests/all');
+
+        // Si l'API renvoie un objet d'erreur → afficher l'erreur, sinon fallback sur tableau vide
         if (!Array.isArray(requests)) {
-            const msg = (requests && (requests.error || requests.detail)) ? (requests.error || requests.detail) : 'Aucune donnée disponible';
-            requestsList.innerHTML = `<div class="alert alert-error">${msg}</div>`;
-            return;
+            if (requests && (requests.error || requests.detail)) {
+                const msg = requests.error || requests.detail;
+                requestsList.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+                return;
+            }
+            requests = [];
         }
-        
+
         if (requests.length === 0) {
-            requestsList.innerHTML = '<div class="alert alert-info">Aucune demande de vacances en attente.</div>';
+            requestsList.innerHTML = '<div class="alert alert-info">Aucune demande de vacances pour le moment.</div>';
             return;
         }
         

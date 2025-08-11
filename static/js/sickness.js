@@ -160,7 +160,14 @@ function previewPdf(declarationId) {
 // Fonction pour charger les déclarations de maladie pour les admins
 async function loadAllSicknessDeclarations() {
     try {
-        const declarations = await apiCall('/sickness-declarations/');
+        let declarations = await apiCall('/sickness-declarations/');
+        if (!Array.isArray(declarations)) {
+            if (declarations && (declarations.error || declarations.detail)) {
+                const msg = declarations.error || declarations.detail;
+                return `<div class="alert alert-error">${msg}</div>`;
+            }
+            declarations = [];
+        }
         
         let html = '<h3>🏥 Déclarations de Maladie - Vue Administrateur</h3>';
         

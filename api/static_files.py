@@ -15,9 +15,9 @@ def get_static_content(file_path):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Absences</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
     <!-- Script de configuration en premier -->
-    <script src="js/config.js"></script>
+    <script src="/static/js/config.js"></script>
 </head>
 <body>
     <div class="container">
@@ -31,11 +31,11 @@ def get_static_content(file_path):
             <form id="login-form">
                 <div class="form-group">
                     <label for="email">Email :</label>
-                    <input type="email" id="email" value="hello.obvious@gmail.com" required>
+                    <input type="email" id="email" value="hello.obvious@gmail.com" required autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label for="password">Mot de passe :</label>
-                    <input type="password" id="password" value="admin123" required>
+                    <input type="password" id="password" value="admin123" required autocomplete="current-password">
                 </div>
                 <button type="submit" class="btn">Se connecter</button>
             </form>
@@ -152,6 +152,45 @@ def get_static_content(file_path):
                                         <button id="event-delete-btn" class="btn btn-danger">Supprimer</button>
                                     </div>
                                 </div>
+
+                                 <!-- Formulaire d'édition intégré -->
+                                 <form id="event-edit-form" style="display:none; margin-top: 10px;">
+                                     <div class="form-group">
+                                         <label for="edit-start-date">Date de début :</label>
+                                         <input type="date" id="edit-start-date" required />
+                                     </div>
+                                     <div class="form-group">
+                                         <label for="edit-end-date">Date de fin :</label>
+                                         <input type="date" id="edit-end-date" required />
+                                     </div>
+                                     <div class="form-group">
+                                         <label for="edit-reason">Raison (optionnel) :</label>
+                                         <textarea id="edit-reason" placeholder="Motif de la demande..."></textarea>
+                                     </div>
+                                     <div class="form-group">
+                                         <label for="edit-status">Statut :</label>
+                                         <select id="edit-status">
+                                             <option value="en_attente">En attente</option>
+                                             <option value="approuve">Approuvé</option>
+                                             <option value="refuse">Refusé</option>
+                                         </select>
+                                     </div>
+                                     <div style="text-align: right;">
+                                         <button type="button" id="event-edit-cancel" class="btn">Annuler</button>
+                                         <button type="submit" class="btn btn-success">Enregistrer</button>
+                                     </div>
+                                 </form>
+
+                                 <!-- Confirmation de suppression intégrée -->
+                                 <div id="event-delete-confirm" style="display:none; margin-top: 10px;">
+                                     <div class="alert alert-error" style="margin-bottom: 12px;">
+                                         Êtes-vous sûr de vouloir supprimer cette absence ?
+                                     </div>
+                                     <div style="text-align: right;">
+                                         <button type="button" id="event-delete-cancel" class="btn">Annuler</button>
+                                         <button type="button" id="event-delete-confirm-btn" class="btn btn-danger">Supprimer définitivement</button>
+                                     </div>
+                                 </div>
                             </div>
                         </div>
                     </div>
@@ -191,7 +230,7 @@ def get_static_content(file_path):
                                         <textarea id="admin-comment" placeholder="Commentaire pour l'utilisateur..."></textarea>
                                     </div>
                                     <div class="form-group" id="admin-absence-pdf-group" style="display:none;">
-                                        <label>Certificat médical (PDF) :</label>
+                                        <label for="admin-absence-pdf">Certificat médical (PDF) :</label>
                                         <div id="admin-absence-dropzone" style="border: 2px dashed #ffc107; padding: 20px; border-radius: 8px; background: #fff8e1; text-align: center; cursor: pointer;">
                                             Glissez-déposez le PDF ici, ou cliquez pour sélectionner.
                                             <input type="file" id="admin-absence-pdf" accept=".pdf" style="display:none;">
@@ -347,15 +386,15 @@ def get_static_content(file_path):
                     <form id="user-form">
                         <div class="form-group">
                             <label for="user-email">Email :</label>
-                            <input type="email" id="user-email" required>
+                            <input type="email" id="user-email" required autocomplete="email">
                         </div>
                         <div class="form-group">
                             <label for="user-first-name">Prénom :</label>
-                            <input type="text" id="user-first-name" required>
+                            <input type="text" id="user-first-name" required autocomplete="given-name">
                         </div>
                         <div class="form-group">
                             <label for="user-last-name">Nom :</label>
-                            <input type="text" id="user-last-name" required>
+                            <input type="text" id="user-last-name" required autocomplete="family-name">
                         </div>
                         <div class="form-group">
                             <label for="user-role">Rôle :</label>
@@ -366,7 +405,7 @@ def get_static_content(file_path):
                         </div>
                         <div class="form-group">
                             <label for="user-password">Mot de passe :</label>
-                            <input type="password" id="user-password" required>
+                            <input type="password" id="user-password" required autocomplete="new-password">
                         </div>
                         <button type="submit" class="btn btn-success">Créer</button>
                         <button type="button" class="btn" onclick="hideNewUserForm()">Annuler</button>
@@ -417,13 +456,13 @@ def get_static_content(file_path):
     </div>
     
     <!-- Scripts modulaires -->
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/dashboard.js"></script>
-    <script src="js/calendar.js"></script>
-    <script src="js/admin.js"></script>
-    <script src="js/sickness.js"></script>
-    <script src="js/main.js"></script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+    <script src="/static/js/calendar.js"></script>
+    <script src="/static/js/admin.js"></script>
+    <script src="/static/js/sickness.js"></script>
+    <script src="/static/js/main.js"></script>
 </body>
 </html>''',
             'mime_type': 'text/html'
@@ -1514,22 +1553,14 @@ class Calendar {
 
         // Charger les événements du mois
         try {
-            const response = await fetch(`${CONFIG.API_BASE_URL}/calendar/admin?year=${this.currentYear}&month=${this.currentMonth + 1}`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
+            const data = await apiCall(`/calendar/admin?year=${this.currentYear}&month=${this.currentMonth + 1}`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
-
-            if (!response.ok) {
-                throw new Error('Erreur lors du chargement du calendrier');
-            }
-
-            const data = await response.json();
             this.events = Array.isArray(data) ? data : [];
             this.renderMonthlyCalendar();
         } catch (error) {
             console.error('Erreur:', error);
-            showAlert('Erreur lors du chargement du calendrier', 'error');
+            showAlert(error.message || 'Erreur lors du chargement du calendrier', 'error');
         }
     }
 
@@ -1543,26 +1574,15 @@ class Calendar {
 
         // Charger les événements de l'année et le résumé
         try {
-            const [eventsResponse, summaryResponse] = await Promise.all([
-                fetch(`${CONFIG.API_BASE_URL}/calendar/user?year=${this.currentYear}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
+            const [data, summary] = await Promise.all([
+                apiCall(`/calendar/user?year=${this.currentYear}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 }),
-                fetch(`${CONFIG.API_BASE_URL}/calendar/summary?year=${this.currentYear}`, {
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    }
+                apiCall(`/calendar/summary?year=${this.currentYear}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
                 })
             ]);
-
-            if (!eventsResponse.ok || !summaryResponse.ok) {
-                throw new Error('Erreur lors du chargement du calendrier');
-            }
-
-            const data = await eventsResponse.json();
             this.events = Array.isArray(data) ? data : [];
-            const summary = await summaryResponse.json();
             
             // Afficher le résumé
             const summaryText = `${summary.used_leave_days}/${summary.total_leave_days} jours utilisés - ${summary.remaining_leave_days} jours restants`;
@@ -1571,7 +1591,7 @@ class Calendar {
             this.renderYearlyCalendar();
         } catch (error) {
             console.error('Erreur:', error);
-            showAlert('Erreur lors du chargement du calendrier', 'error');
+            showAlert(error.message || 'Erreur lors du chargement du calendrier', 'error');
         }
     }
 
@@ -1792,15 +1812,59 @@ class Calendar {
         const actionsRow = document.querySelector('#event-modal .admin-only');
         const editBtn = document.getElementById('event-edit-btn');
         const deleteBtn = document.getElementById('event-delete-btn');
+        const editForm = document.getElementById('event-edit-form');
+        const deleteConfirm = document.getElementById('event-delete-confirm');
+        const editStart = document.getElementById('edit-start-date');
+        const editEnd = document.getElementById('edit-end-date');
+        const editReason = document.getElementById('edit-reason');
+        const editStatus = document.getElementById('edit-status');
+        const editCancel = document.getElementById('event-edit-cancel');
+        const deleteCancel = document.getElementById('event-delete-cancel');
+        const deleteConfirmBtn = document.getElementById('event-delete-confirm-btn');
         if (actionsRow && editBtn && deleteBtn) {
             if (isAdmin && event.event_source === 'absence_request') {
                 actionsRow.style.display = 'flex';
-                editBtn.onclick = () => this.openEditDialog(event);
-                deleteBtn.onclick = () => this.confirmDelete(event);
+                // Préremplir le formulaire d'édition
+                if (editForm && editStart && editEnd && editReason && editStatus) {
+                    editForm.style.display = 'none';
+                    deleteConfirm.style.display = 'none';
+                    editStart.value = event.start;
+                    editEnd.value = event.end;
+                    editReason.value = event.reason || '';
+                    editStatus.value = event.status || 'en_attente';
+
+                    editForm.onsubmit = (e) => {
+                        e.preventDefault();
+                        const newStart = editStart.value;
+                        const newEnd = editEnd.value;
+                        if (!newStart || !newEnd) return;
+                        if (new Date(newStart) > new Date(newEnd)) { showAlert('La date de fin doit être postérieure à la date de début', 'error'); return; }
+                        const payload = {
+                            start_date: newStart,
+                            end_date: newEnd,
+                            reason: (editReason.value || null),
+                            status: editStatus.value
+                        };
+                        this.updateAbsence(event.id, payload);
+                    };
+                    if (editCancel) editCancel.onclick = () => { editForm.style.display = 'none'; };
+                }
+                if (editBtn) editBtn.onclick = () => {
+                    if (deleteConfirm) deleteConfirm.style.display = 'none';
+                    if (editForm) editForm.style.display = 'block';
+                };
+                if (deleteBtn) deleteBtn.onclick = () => {
+                    if (editForm) editForm.style.display = 'none';
+                    if (deleteConfirm) deleteConfirm.style.display = 'block';
+                };
+                if (deleteCancel) deleteCancel.onclick = () => { if (deleteConfirm) deleteConfirm.style.display = 'none'; };
+                if (deleteConfirmBtn) deleteConfirmBtn.onclick = () => this.confirmDelete(event);
             } else {
                 actionsRow.style.display = 'none';
-                editBtn.onclick = null;
-                deleteBtn.onclick = null;
+                if (editBtn) editBtn.onclick = null;
+                if (deleteBtn) deleteBtn.onclick = null;
+                if (editForm) editForm.style.display = 'none';
+                if (deleteConfirm) deleteConfirm.style.display = 'none';
             }
         }
     }
@@ -1814,34 +1878,18 @@ class Calendar {
     }
 
     async confirmDelete(event) {
-        if (!confirm('Supprimer cette absence ?')) return;
         try {
             await apiCall(`/absence-requests/admin/${event.id}`, { method: 'DELETE' });
             showAlert('Absence supprimée');
             closeEventModal();
             await this.showCalendar();
-            loadAllRequests && loadAllRequests();
+            if (typeof window.loadAllRequests === 'function') { window.loadAllRequests(); }
         } catch (e) {
             showAlert(e.message || 'Erreur suppression', 'error');
         }
     }
 
-    openEditDialog(event) {
-        const newStart = prompt('Nouvelle date de début (YYYY-MM-DD):', event.start);
-        if (!newStart) return;
-        const newEnd = prompt('Nouvelle date de fin (YYYY-MM-DD):', event.end);
-        if (!newEnd) return;
-        const newReason = prompt('Raison (optionnel):', event.reason || '');
-        const statusMap = { 'en_attente': 'en_attente', 'approuve': 'approuve', 'refuse': 'refuse' };
-        const newStatus = prompt('Statut (en_attente/approuve/refuse):', event.status);
-        const normalizedStatus = statusMap[newStatus] ? newStatus : undefined;
-        this.updateAbsence(event.id, {
-            start_date: newStart,
-            end_date: newEnd,
-            reason: newReason || null,
-            status: normalizedStatus
-        });
-    }
+    // openEditDialog supprimé au profit du formulaire intégré
 
     async updateAbsence(id, payload) {
         try {
@@ -1852,7 +1900,7 @@ class Calendar {
             showAlert('Absence mise à jour');
             closeEventModal();
             await this.showCalendar();
-            loadAllRequests && loadAllRequests();
+            if (typeof window.loadAllRequests === 'function') { window.loadAllRequests(); }
         } catch (e) {
             showAlert(e.message || 'Erreur mise à jour', 'error');
         }
@@ -1944,20 +1992,31 @@ async function loadAllRequests() {
     const requestsList = document.getElementById('all-requests-list');
     
     try {
-        const requests = await apiCall('/absence-requests/all');
-        
+        let requests = await apiCall('/absence-requests/all');
+
+        // Si l'API renvoie un objet d'erreur → afficher l'erreur, sinon fallback sur tableau vide
+        if (!Array.isArray(requests)) {
+            if (requests && (requests.error || requests.detail)) {
+                const msg = requests.error || requests.detail;
+                requestsList.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+                return;
+            }
+            requests = [];
+        }
+
         if (requests.length === 0) {
-            requestsList.innerHTML = '<div class="alert alert-info">Aucune demande de vacances en attente.</div>';
+            requestsList.innerHTML = '<div class="alert alert-info">Aucune demande de vacances pour le moment.</div>';
             return;
         }
         
         let html = '<h3>🏖️ Demandes de Vacances</h3>';
         
-        // Statistiques rapides
-        const totalRequests = requests.length;
-        const pendingRequests = requests.filter(r => r.status === 'en_attente').length;
-        const approvedRequests = requests.filter(r => r.status === 'approuve').length;
-        const rejectedRequests = requests.filter(r => r.status === 'refuse').length;
+        // Statistiques rapides (sécurisées)
+        const arr = Array.isArray(requests) ? requests : [];
+        const totalRequests = arr.length;
+        const pendingRequests = arr.filter(r => r.status === 'en_attente').length;
+        const approvedRequests = arr.filter(r => r.status === 'approuve').length;
+        const rejectedRequests = arr.filter(r => r.status === 'refuse').length;
         
         html += `
             <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -1984,7 +2043,7 @@ async function loadAllRequests() {
         
         html += '<table class="table"><thead><tr><th>👤 Utilisateur</th><th>📅 Période</th><th>📝 Raison</th><th>📊 Statut</th><th>🕐 Créée le</th><th>⚡ Actions</th></tr></thead><tbody>';
         
-        requests.forEach(request => {
+        arr.forEach(request => {
             const startDate = formatDateSafe(request.start_date);
             const endDate = formatDateSafe(request.end_date);
             const createdDate = formatDateSafe(request.created_at);
@@ -2267,6 +2326,11 @@ async function showUserAbsenceSummary(userId) {
     
     try {
         const summary = await apiCall(`/users/${userId}/absence-summary`);
+        if (!summary || summary.error || !summary.user) {
+            const message = (summary && (summary.error || summary.detail)) ? (summary.error || summary.detail) : 'Résumé introuvable';
+            summaryDiv.innerHTML = `<div class="alert alert-error">Erreur: ${message}</div>`;
+            return;
+        }
         
         const user = summary.user;
         document.getElementById('user-absence-title').textContent = 
@@ -2300,7 +2364,7 @@ async function showUserAbsenceSummary(userId) {
             </div>
         `;
         
-        if (summary.recent_absences && summary.recent_absences.length > 0) {
+        if (Array.isArray(summary.recent_absences) && summary.recent_absences.length > 0) {
             html += `
                 <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
                     <h4 style="color: #34495e; margin-bottom: 15px;">📅 Absences récentes</h4>
@@ -2656,7 +2720,14 @@ function previewPdf(declarationId) {
 // Fonction pour charger les déclarations de maladie pour les admins
 async function loadAllSicknessDeclarations() {
     try {
-        const declarations = await apiCall('/sickness-declarations/');
+        let declarations = await apiCall('/sickness-declarations/');
+        if (!Array.isArray(declarations)) {
+            if (declarations && (declarations.error || declarations.detail)) {
+                const msg = declarations.error || declarations.detail;
+                return `<div class="alert alert-error">${msg}</div>`;
+            }
+            declarations = [];
+        }
         
         let html = '<h3>🏥 Déclarations de Maladie - Vue Administrateur</h3>';
         
@@ -3031,6 +3102,12 @@ async function loadUserRequests() {
             apiCall('/sickness-declarations/')
         ]);
 
+        if (!Array.isArray(requests)) {
+            const msg = (requests && (requests.error || requests.detail)) ? (requests.error || requests.detail) : 'Données indisponibles';
+            requestsListDiv.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+            return;
+        }
+
         if (requests.length === 0) {
             requestsListDiv.innerHTML = '<p>Aucune demande de vacances.</p>';
             return;
@@ -3040,7 +3117,7 @@ async function loadUserRequests() {
         html += '<table class="table"><thead><tr><th>Type</th><th>Période</th><th>Statut</th><th>Détails</th><th>Créée le</th></tr></thead><tbody>';
 
         // Demandes d'absence (vacances/maladie déclarées via demandes)
-        requests.forEach(request => {
+        (Array.isArray(requests) ? requests : []).forEach(request => {
             const startDate = formatDateSafe(request.start_date);
             const endDate = formatDateSafe(request.end_date);
             const createdDate = formatDateSafe(request.created_at);
@@ -3234,7 +3311,54 @@ window.showNewRequestForm = showNewRequestForm;
 window.hideNewRequestForm = hideNewRequestForm;
 window.loadUserRequests = loadUserRequests;
 window.loadRequests = loadRequests;
-window.showSubTab = showSubTab;''',
+window.showSubTab = showSubTab;
+
+async function apiCall(endpoint, options = {}) {
+    const url = `${CONFIG.API_BASE_URL}${endpoint}`;
+    const config = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(options.headers || {})
+        },
+        ...options
+    };
+
+    if (authToken) {
+        config.headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(url, config);
+    const raw = await response.text();
+    let data = {};
+    try {
+        data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+        if (!response.ok) {
+            throw new Error(raw?.slice(0, 300) || 'Erreur API');
+        }
+        return {};
+    }
+    // Gestion centralisée des erreurs renvoyées en JSON (même si HTTP 200)
+    const lowerError = (data && typeof data === 'object' && (data.error || data.detail))
+        ? String(data.error || data.detail).toLowerCase()
+        : '';
+    if (lowerError.includes('forbidden') || lowerError.includes('unauthorized')) {
+        // Session expirée / token invalide → forcer une reconnexion propre
+        try { localStorage.removeItem('authToken'); localStorage.removeItem('currentUser'); } catch {}
+        authToken = null; currentUser = null;
+        // Afficher l'écran d'auth et masquer le contenu
+        const auth = document.getElementById('auth-section');
+        const main = document.getElementById('main-content');
+        if (auth && main) { auth.style.display = 'block'; main.style.display = 'none'; }
+        throw new Error('Session expirée, veuillez vous reconnecter.');
+    }
+    if (!response.ok) {
+        const msg = data?.detail || data?.error || raw || 'Erreur API';
+        throw new Error(typeof msg === 'string' ? msg : 'Erreur API');
+    }
+    return data;
+}''',
             'mime_type': 'text/javascript'
         },
     }
