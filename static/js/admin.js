@@ -358,7 +358,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${authToken}` },
                         body: fd
-                    }).then(async r => { if (!r.ok) throw new Error((await r.json()).detail || 'Erreur'); });
+                    }).then(async r => {
+                        if (!r.ok) {
+                            let msg = 'Erreur';
+                            try {
+                                const raw = await r.text();
+                                try {
+                                    const j = raw ? JSON.parse(raw) : {};
+                                    msg = j.error || j.detail || raw || msg;
+                                } catch (_) {
+                                    msg = raw || msg;
+                                }
+                            } catch (_) {}
+                            throw new Error(msg);
+                        }
+                    });
                     showAlert('Arrêt maladie créé et email envoyé.', 'success');
                 } else {
                     await apiCall('/absence-requests/admin', {

@@ -80,8 +80,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!response.ok) {
                     let errorMsg = 'Erreur lors de l\'envoi de la déclaration';
                     try {
-                        const errorData = await response.json();
-                        errorMsg = errorData.error || errorData.detail || errorMsg;
+                        const raw = await response.text();
+                        try {
+                            const errorData = raw ? JSON.parse(raw) : {};
+                            errorMsg = errorData.error || errorData.detail || raw || errorMsg;
+                        } catch (_) {
+                            errorMsg = raw || errorMsg;
+                        }
                     } catch (_) {}
                     throw new Error(errorMsg);
                 }

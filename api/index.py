@@ -959,7 +959,7 @@ class handler(BaseHTTPRequestHandler):
                     except Exception:
                         self.send_response(500); self.end_headers(); return
                 self.send_response(200)
-                self.send_header('Content-type', 'application/json')
+                self.send_header('Content-type', 'application/json; charset=utf-8')
                 self.send_header('Access-Control-Allow-Origin', '*')
                 self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
                 self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -1545,7 +1545,7 @@ class handler(BaseHTTPRequestHandler):
                 path = path[:-1]
 
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-type', 'application/json; charset=utf-8')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -1637,7 +1637,7 @@ class handler(BaseHTTPRequestHandler):
             self.wfile.write(safe_json_dumps(response).encode('utf-8'))
         except Exception as e:
             self.send_response(500)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-type', 'application/json; charset=utf-8')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(safe_json_dumps({"error": str(e)}).encode('utf-8'))
