@@ -4,7 +4,7 @@ import os
 import sys
 from urllib.parse import urlparse, parse_qs
 import hashlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date as _date
 import base64
 import io
 import importlib.util
@@ -104,8 +104,10 @@ def send_email_resend(to_emails, subject, text, html=None, attachment_path=None,
         return False
 
 def json_serial(obj):
-    """Helper pour sérialiser les objets datetime en JSON"""
+    """Helper pour sérialiser les objets date/datetime en JSON (compat Postgres)."""
     if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, _date):
         return obj.isoformat()
     raise TypeError(f"Type {type(obj)} not serializable")
 
@@ -963,10 +965,13 @@ class handler(BaseHTTPRequestHandler):
                     response = handle_users()
                 elif path == '/absence-requests':
                     current_user = get_user_from_auth_header(self.headers)
-                    response = handle_absence_requests(current_user)
+                    # Toujours renvoyer un tableau JSON, même si vide, pour éviter les erreurs frontend
+                    result = handle_absence_requests(current_user)
+                    response = result if isinstance(result, list) else ([] if not result or result.get('error') else [])
                 elif path == '/absence-requests/all':
-                    # Pour compat avec le frontend, retourner la même liste sans filtre
-                    response = handle_absence_requests(None)
+                    # Pour compat avec le frontend, retourner la même liste sans filtre (toujours tableau)
+                    result = handle_absence_requests(None)
+                    response = result if isinstance(result, list) else ([] if not result or result.get('error') else [])
                 elif path == '/api/dashboard':
                     current_user = get_user_from_auth_header(self.headers)
                     response = handle_dashboard(current_user)
