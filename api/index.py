@@ -1082,13 +1082,7 @@ class handler(BaseHTTPRequestHandler):
                 # Attacher l'objet FieldStorage complet pour accès au fichier si présent
                 data["__fs__"] = fs
 
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-            self.end_headers()
-
+            # Reporter l'écriture des headers après la construction de la réponse
             if self.path == '/auth/login' and isinstance(data, dict):
                 response = handle_login(data)
             elif self.path == '/token' and isinstance(data, dict):
@@ -1634,6 +1628,13 @@ class handler(BaseHTTPRequestHandler):
                 except Exception as e:
                     response = {"error": str(e)}
 
+            # Écrire la réponse
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            self.end_headers()
             self.wfile.write(safe_json_dumps(response).encode('utf-8'))
         except Exception as e:
             self.send_response(500)
