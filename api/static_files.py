@@ -1411,26 +1411,38 @@ async function loadDashboard() {
     } else {
         // Dashboard pour utilisateurs normaux
         try {
-            const dashboardData = await apiCall('/dashboard/');
+            // Certaines plateformes (Vercel) exposent l'API sous /api/*
+            // On tente d'abord /api/dashboard puis on bascule sur /dashboard/ en fallback pour le dev local
+            let dashboardData;
+            try {
+                dashboardData = await apiCall('/api/dashboard');
+            } catch (e) {
+                dashboardData = await apiCall('/dashboard/');
+            }
+            
+            // Sécuriser et normaliser les valeurs numériques
+            const usedDays = Number(dashboardData.used_leave_days) || 0;
+            const totalDays = Number(dashboardData.total_leave_days) || 0;
+            const remainingDays = Number(dashboardData.remaining_leave_days ?? (totalDays - usedDays)) || 0;
             
             let html = '<h3>🌴 Compteur de Congés Payés</h3>';
             
             // Calcul du pourcentage de congés utilisés pour la barre de progression
-            const percentageUsed = (dashboardData.used_leave_days / dashboardData.total_leave_days) * 100;
+            const percentageUsed = totalDays > 0 ? (usedDays / totalDays) * 100 : 0;
             
             html += `
                 <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 20px 0; border-left: 5px solid #3498db;">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px;">
                         <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${dashboardData.remaining_leave_days}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #27ae60;">${remainingDays}</div>
                             <div style="color: #666; font-size: 14px;">Jours restants</div>
                         </div>
                         <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${dashboardData.used_leave_days}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">${usedDays}</div>
                             <div style="color: #666; font-size: 14px;">Jours utilisés</div>
                         </div>
                         <div style="text-align: center;">
-                            <div style="font-size: 24px; font-weight: bold; color: #3498db;">${dashboardData.total_leave_days}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #3498db;">${totalDays}</div>
                             <div style="color: #666; font-size: 14px;">Total annuel</div>
                         </div>
                     </div>
@@ -1449,11 +1461,11 @@ async function loadDashboard() {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
                     <div style="background: #f39c12; color: white; padding: 20px; border-radius: 8px; text-align: center;">
                         <h4>En attente</h4>
-                        <h2>${dashboardData.pending_requests}</h2>
+                        <h2>${Number(dashboardData.pending_requests) || 0}</h2>
                     </div>
                     <div style="background: #27ae60; color: white; padding: 20px; border-radius: 8px; text-align: center;">
                         <h4>Approuvées</h4>
-                        <h2>${dashboardData.approved_requests}</h2>
+                        <h2>${Number(dashboardData.approved_requests) || 0}</h2>
                     </div>
                 </div>
             `;
