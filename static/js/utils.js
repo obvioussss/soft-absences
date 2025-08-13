@@ -234,13 +234,20 @@ async function loadUserRequests() {
     try {
         requestsListDiv.innerHTML = '<div class="loading">Chargement...</div>';
         const [requests, sickness] = await Promise.all([
-            apiCall('/absence-requests/'),
-            apiCall('/sickness-declarations/')
+            apiCall('/absence-requests'),
+            apiCall('/sickness-declarations')
         ]);
 
         if (!Array.isArray(requests)) {
-            const msg = (requests && (requests.error || requests.detail)) ? (requests.error || requests.detail) : 'Données indisponibles';
-            requestsListDiv.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+            const msg = (requests && (requests.error || requests.detail)) ? (requests.error || requests.detail) : null;
+            if (msg) {
+                requestsListDiv.innerHTML = `<div class="alert alert-error">${msg}</div>`;
+            } else if (requests && typeof requests === 'object' && Object.keys(requests).length === 0) {
+                // Fallback quand la réponse est vide (ex: HTML non parsé → {})
+                requestsListDiv.innerHTML = '<p>Aucune demande de vacances.</p>';
+            } else {
+                requestsListDiv.innerHTML = '<div class="alert alert-error">Données indisponibles</div>';
+            }
             return;
         }
 

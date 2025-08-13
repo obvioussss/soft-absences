@@ -3,7 +3,7 @@ async function loadUsers() {
     const usersList = document.getElementById('users-list');
     
     try {
-        const users = await apiCall('/users/');
+    const users = await apiCall('/users');
         
         let html = '<table class="table"><thead><tr><th>Email</th><th>Nom</th><th>Rôle</th><th>Statut</th><th>Congés</th><th>Actions</th></tr></thead><tbody>';
         
@@ -158,7 +158,7 @@ async function showAdminAbsenceForm() {
     
     // Charger la liste des utilisateurs
     try {
-        const users = await apiCall('/users/');
+    const users = await apiCall('/users');
         const userSelect = document.getElementById('admin-absence-user');
         userSelect.innerHTML = '<option value="">Sélectionner un utilisateur...</option>';
         
@@ -219,7 +219,7 @@ function showAdminSicknessForm() {
     modal.style.display = 'flex';
     (async () => {
         try {
-            const users = await apiCall('/users/');
+    const users = await apiCall('/users');
             const userSelect = document.getElementById('admin-sickness-user');
             userSelect.innerHTML = '<option value="">Sélectionner un utilisateur...</option>';
             users.forEach(user => {
@@ -514,7 +514,7 @@ async function loadAdminDocuments() {
     if (!container) return;
     try {
         container.innerHTML = '<div class="loading">Chargement...</div>';
-        const declarations = await apiCall('/sickness-declarations/');
+const declarations = await apiCall('/sickness-declarations');
         const withPdf = declarations.filter(d => d.pdf_filename);
         if (withPdf.length === 0) {
             container.innerHTML = '<div class="alert alert-info">Aucun document disponible.</div>';

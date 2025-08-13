@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Fonction pour charger les déclarations de maladie de l'utilisateur
 async function loadSicknessDeclarations() {
     try {
-        const declarations = await apiCall('/sickness-declarations/');
+    const declarations = await apiCall('/sickness-declarations');
         
         let html = '<h3>Mes déclarations de maladie</h3>';
         
@@ -160,7 +160,7 @@ function previewPdf(declarationId) {
 // Fonction pour charger les déclarations de maladie pour les admins
 async function loadAllSicknessDeclarations() {
     try {
-        let declarations = await apiCall('/sickness-declarations/');
+    let declarations = await apiCall('/sickness-declarations');
         if (!Array.isArray(declarations)) {
             if (declarations && (declarations.error || declarations.detail)) {
                 const msg = declarations.error || declarations.detail;

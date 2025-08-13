@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                await apiCall('/absence-requests/', {
+                await apiCall('/absence-requests', {
                     method: 'POST',
                     body: JSON.stringify(formData)
                 });
