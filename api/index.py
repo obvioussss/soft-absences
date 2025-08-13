@@ -1066,7 +1066,7 @@ class handler(BaseHTTPRequestHandler):
                     data = None
 
             # Support x-www-form-urlencoded
-            elif content_type.startswith('application/x-www-form-urlencoded'):
+            elif content_type.startswith('application/x-www-form-urlencoded') or content_type.startswith('application/x-www-form-urlencoded;'):
                 parsed = parse_qs(raw_body.decode('utf-8'))
                 data = {k: v[0] for k, v in parsed.items()}
 

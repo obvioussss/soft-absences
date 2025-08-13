@@ -1,13 +1,14 @@
 // Authentification
 async function login(email, password) {
-    const formData = new FormData();
-    formData.append('username', email);
-    formData.append('password', password);
+    const body = new URLSearchParams();
+    body.append('username', email);
+    body.append('password', password);
     
     try {
         const response = await fetch(`${CONFIG.API_BASE_URL}/token`, {
             method: 'POST',
-            body: formData
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
         });
         
         if (!response.ok) {
