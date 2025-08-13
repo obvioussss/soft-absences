@@ -938,9 +938,15 @@ class handler(BaseHTTPRequestHandler):
                         if pdf_path and os.path.exists(pdf_path):
                             with open(pdf_path, 'rb') as f:
                                 content_bytes = f.read()
-                        elif pdf_data:
-                            # pdf_data stocké en BLOB/BYTEA
-                            content_bytes = pdf_data if isinstance(pdf_data, (bytes, bytearray)) else None
+                        elif pdf_data is not None:
+                            # pdf_data stocké en BLOB/BYTEA (psycopg retourne souvent memoryview)
+                            if isinstance(pdf_data, (bytes, bytearray)):
+                                content_bytes = pdf_data
+                            else:
+                                try:
+                                    content_bytes = bytes(pdf_data)
+                                except Exception:
+                                    content_bytes = None
                         if not content_bytes:
                             self.send_response(404); self.end_headers(); return
                         self.send_response(200)
@@ -1019,7 +1025,8 @@ class handler(BaseHTTPRequestHandler):
                     response = handle_calendar_summary(year, current_user)
                 elif path == '/sickness-declarations':
                     current_user = get_user_from_auth_header(self.headers)
-                    response = handle_sickness_list(current_user)
+                    res = handle_sickness_list(current_user)
+                    response = res if isinstance(res, list) else ([] if not res or res.get('error') else [])
                 
                 self.wfile.write(safe_json_dumps(response).encode('utf-8'))
                 return
@@ -1383,6 +1390,60 @@ class handler(BaseHTTPRequestHandler):
                             body = f"Votre déclaration du {r[0]} au {r[1]} a été consultée."
                             send_email_resend([r[2]], subject, body, f"<p>{body}</p>")
                         response = {"message": "Déclaration marquée comme vue et email envoyé"}
+                    except Exception as e:
+                        response = {"error": str(e)}
+            elif self.path.startswith('/sickness-declarations/') and self.path.endswith('/resend-email'):
+                # Renvoyer l'email pour une déclaration donnée (admin-only)
+                try:
+                    decl_id = int(self.path.strip('/').split('/')[1])
+                except Exception:
+                    decl_id = 0
+                current_user = get_user_from_auth_header(self.headers)
+                if not current_user or current_user.get('role') != 'admin':
+                    response = {"error": "Forbidden"}
+                elif decl_id <= 0:
+                    response = {"error": "Bad request"}
+                else:
+                    try:
+                        conn = init_db(); cursor = conn.cursor()
+                        cursor.execute('''
+                            SELECT s.pdf_path, s.pdf_filename, s.pdf_data, s.start_date, s.end_date, u.email, u.first_name, u.last_name
+                              FROM sickness_declarations s JOIN users u ON s.user_id = u.id WHERE s.id = %s
+                        ''', (decl_id,))
+                        row = cursor.fetchone();
+                        if not row:
+                            conn.close(); response = {"error": "Declaration not found"}
+                        else:
+                            pdf_path, pdf_filename, pdf_data, s_start, s_end, user_email, fn, ln = row
+                            attachment_path = None
+                            if pdf_path and os.path.exists(pdf_path):
+                                attachment_path = pdf_path
+                            elif pdf_data is not None:
+                                try:
+                                    base_dir = '/tmp/uploads/sickness_declarations'
+                                    os.makedirs(base_dir, exist_ok=True)
+                                    tmp_name = f"{uuid.uuid4()}_resend.pdf"
+                                    attachment_path = os.path.join(base_dir, tmp_name)
+                                    content_bytes = pdf_data if isinstance(pdf_data, (bytes, bytearray)) else bytes(pdf_data)
+                                    with open(attachment_path, 'wb') as f:
+                                        f.write(content_bytes)
+                                except Exception:
+                                    attachment_path = None
+                            # Construire destinataires: admins + user
+                            cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                            admin_rows = cursor.fetchall() or []
+                            recipients = [r[0] for r in admin_rows]
+                            if DEFAULT_ADMIN_EMAIL not in recipients:
+                                recipients.append(DEFAULT_ADMIN_EMAIL)
+                            if user_email: recipients.append(user_email)
+                            subject = f"Gestion des absences - Déclaration maladie (renvoi) - {fn} {ln}"
+                            body = f"Déclaration du {s_start} au {s_end}."
+                            ok = send_email_resend(list(set(recipients)), subject, body, f"<p>{body}</p>", attachment_path=attachment_path, attachment_filename=pdf_filename or 'document.pdf')
+                            if ok:
+                                cursor.execute('UPDATE sickness_declarations SET email_sent=1 WHERE id=%s', (decl_id,))
+                                conn.commit()
+                            conn.close()
+                            response = {"message": "Email renvoyé", "ok": bool(ok)}
                     except Exception as e:
                         response = {"error": str(e)}
             elif self.path.rstrip('/') == '/absence-requests/admin':
