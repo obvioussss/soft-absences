@@ -1232,14 +1232,29 @@ class handler(BaseHTTPRequestHandler):
                     if isinstance(data, dict):
                         start_date = data.get('start_date'); end_date = data.get('end_date'); description = data.get('description')
                         fs = data.get('__fs__')
+                    # Support fallback quand Content-Type est mal détecté côté Vercel
+                    if not fs and 'multipart/form-data' in (self.headers.get('Content-Type') or ''):
+                        try:
+                            import cgi, io
+                            env = {
+                                'REQUEST_METHOD': 'POST',
+                                'CONTENT_TYPE': self.headers.get('Content-Type', ''),
+                                'CONTENT_LENGTH': self.headers.get('Content-Length', '0'),
+                            }
+                            fs = cgi.FieldStorage(fp=io.BytesIO(raw_body), headers=self.headers, environ=env)
+                        except Exception:
+                            fs = None
                     if not start_date or not end_date:
                         response = {"error": "Invalid payload"}
                     else:
                         try:
                             # Sauvegarder le PDF si fourni (requis côté front)
-                            if fs and 'pdf_file' in fs:
+                            if fs and hasattr(fs, 'keys') and ('pdf_file' in fs.keys()):
                                 try:
                                     pdf_field = fs['pdf_file']
+                                    # FieldStorage peut retourner une liste si plusieurs fichiers
+                                    if isinstance(pdf_field, list) and pdf_field:
+                                        pdf_field = pdf_field[0]
                                     original_name = getattr(pdf_field, 'filename', 'document.pdf') or 'document.pdf'
                                     base_dir = '/tmp/uploads/sickness_declarations'
                                     os.makedirs(base_dir, exist_ok=True)
@@ -1319,11 +1334,14 @@ class handler(BaseHTTPRequestHandler):
                     start_date = (data or {}).get('start_date')
                     end_date = (data or {}).get('end_date')
                     description = (data or {}).get('description')
-                    if not fs or not user_id or not start_date or not end_date or 'pdf_file' not in fs:
+                    has_pdf = bool(fs and hasattr(fs, 'keys') and ('pdf_file' in fs.keys()))
+                    if not fs or not user_id or not start_date or not end_date or not has_pdf:
                         response = {"error": "Invalid payload"}
                     else:
                         try:
                             pdf_field = fs['pdf_file']
+                            if isinstance(pdf_field, list) and pdf_field:
+                                pdf_field = pdf_field[0]
                             original_name = getattr(pdf_field, 'filename', 'document.pdf')
                             # Sauvegarder dans /tmp/uploads/sickness_declarations
                             base_dir = '/tmp/uploads/sickness_declarations'
