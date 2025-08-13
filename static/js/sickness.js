@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = true;
                 submitBtn.textContent = '📧 Envoi en cours...';
                 
-                const response = await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/`, {
+                const response = await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${authToken}`
@@ -78,8 +78,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Erreur lors de l\'envoi de la déclaration');
+                    let errorMsg = 'Erreur lors de l\'envoi de la déclaration';
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorData.detail || errorMsg;
+                    } catch (_) {}
+                    throw new Error(errorMsg);
                 }
                 
                  const result = await response.json();
@@ -107,7 +111,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // Fonction pour charger les déclarations de maladie de l'utilisateur
 async function loadSicknessDeclarations() {
     try {
-    const declarations = await apiCall('/sickness-declarations');
+    let declarations = await apiCall('/sickness-declarations');
+        if (!Array.isArray(declarations)) {
+            if (declarations && (declarations.error || declarations.detail)) {
+                const msg = declarations.error || declarations.detail;
+                return `<div class="alert alert-error">${msg}</div>`;
+            }
+            declarations = [];
+        }
         
         let html = '<h3>Mes déclarations de maladie</h3>';
         
@@ -117,9 +128,9 @@ async function loadSicknessDeclarations() {
             html += '<table class="table"><thead><tr><th>Période</th><th>Description</th><th>PDF</th><th>Email envoyé</th><th>Créée le</th></tr></thead><tbody>';
             
             declarations.forEach(declaration => {
-                const startDate = new Date(declaration.start_date).toLocaleDateString('fr-FR');
-                const endDate = new Date(declaration.end_date).toLocaleDateString('fr-FR');
-                const createdDate = new Date(declaration.created_at).toLocaleDateString('fr-FR');
+                const startDate = formatDateSafe(declaration.start_date);
+                const endDate = formatDateSafe(declaration.end_date);
+                const createdDate = formatDateSafe(declaration.created_at);
                 
                 const pdfCell = declaration.pdf_filename ? `
                     ✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf" target="_blank" rel="noopener">${declaration.pdf_filename}</a>
