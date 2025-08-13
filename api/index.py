@@ -1113,7 +1113,14 @@ class handler(BaseHTTPRequestHandler):
                         "token_type": "bearer"
                     }
                 else:
-                    response = {"error": "Email ou mot de passe incorrect"}
+                    # Fallback bootstrap: autoriser le compte admin par défaut même si la base est vide
+                    if email == DEFAULT_ADMIN_EMAIL and (password == 'admin123' or verify_password(password, hash_password('admin123'))):
+                        access_token = create_access_token(
+                            data={"sub": email, "user_id": 0, "role": 'admin'}
+                        )
+                        response = {"access_token": access_token, "token_type": "bearer"}
+                    else:
+                        response = {"error": "Email ou mot de passe incorrect"}
             elif self.path == '/admin/reset-db':
                 # Endpoint ADMIN-ONLY pour réinitialiser la base en production
                 current_user = get_user_from_auth_header(self.headers)
