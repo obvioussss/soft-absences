@@ -1050,6 +1050,7 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Gérer les requêtes POST (auth, token, etc.)"""
         try:
+            response = {"error": "Route non trouvée"}
             # Lire le contenu de la requête
             content_length = int(self.headers.get('Content-Length', 0))
             raw_body = self.rfile.read(content_length)
@@ -1261,13 +1262,12 @@ class handler(BaseHTTPRequestHandler):
                                     pdf_path = file_path
                                 except Exception as e:
                                     response = {"error": f"Erreur sauvegarde PDF: {str(e)}"}
-                                    self.wfile.write(safe_json_dumps(response).encode('utf-8'))
-                                    return
+                                    # Laisser la sortie commune gérer les headers/écriture
+                                    raise Exception(response["error"])
                             else:
                                 # Si pas de fichier détecté dans la requête multipart
                                 response = {"error": "PDF manquant (pdf_file)"}
-                                self.wfile.write(safe_json_dumps(response).encode('utf-8'))
-                                return
+                                raise Exception(response["error"])
 
                             conn = init_db(); cursor = conn.cursor()
                             # Essayer d'insérer aussi les octets (pdf_data)
