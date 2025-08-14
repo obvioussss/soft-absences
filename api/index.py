@@ -35,22 +35,62 @@ hash_password = None
 get_static_content = None
 get_mime_type = None
 
+# Fonctions simplifiées pour éviter les problèmes d'import sur Vercel
+def simple_hash_password(password: str) -> str:
+    """Hash simple avec SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def simple_verify_password(password: str, hashed: str) -> bool:
+    """Vérifier un mot de passe"""
+    return simple_hash_password(password) == hashed
+
+def simple_init_db():
+    """Base SQLite simple en mémoire"""
+    try:
+        import sqlite3
+        conn = sqlite3.connect(":memory:")
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                email TEXT UNIQUE,
+                first_name TEXT,
+                last_name TEXT,
+                password_hash TEXT,
+                role TEXT
+            )
+        ''')
+        conn.commit()
+        return conn
+    except Exception:
+        return None
+
+# Essayer les imports, sinon utiliser les fonctions simplifiées
 try:
     from database import init_db as _idb, verify_password as _vp, hash_password as _hp
     from static_files import get_static_content as _gsc, get_mime_type as _gmt
     init_db, verify_password, hash_password = _idb, _vp, _hp
     get_static_content, get_mime_type = _gsc, _gmt
 except Exception as e:
-    print(f"Erreur import direct: {e}, tentative import dynamique…")
+    print(f"Erreur import direct: {e}, utilisation des fonctions simplifiées")
+    init_db, verify_password, hash_password = simple_init_db, simple_verify_password, simple_hash_password
     db_mod = _import_by_path("database", "database.py")
     sf_mod = _import_by_path("static_files", "static_files.py")
     if db_mod is not None:
-        init_db = getattr(db_mod, 'init_db', None)
-        verify_password = getattr(db_mod, 'verify_password', None)
-        hash_password = getattr(db_mod, 'hash_password', None)
+        init_db = getattr(db_mod, 'init_db', simple_init_db)
+        verify_password = getattr(db_mod, 'verify_password', simple_verify_password)
+        hash_password = getattr(db_mod, 'hash_password', simple_hash_password)
     if sf_mod is not None:
         get_static_content = getattr(sf_mod, 'get_static_content', None)
         get_mime_type = getattr(sf_mod, 'get_mime_type', None)
+    
+    # Fonctions statiques simplifiées si les imports échouent
+    if get_static_content is None:
+        def get_static_content(path):
+            return None
+    if get_mime_type is None:
+        def get_mime_type(path):
+            return 'text/html'
 
 if init_db is None:
     def init_db():
