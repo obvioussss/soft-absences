@@ -1,52 +1,49 @@
 // Authentification
 async function login(email, password) {
-    const body = new URLSearchParams();
-    body.append('username', email);
-    body.append('password', password);
-    
     try {
-        const response = await fetch(`${CONFIG.API_BASE_URL}/token`, {
+        // 1) Essai principal: endpoint JSON dédié
+        const jsonResp = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        let jsonData = null;
+        try { jsonData = await jsonResp.json(); } catch (_) { jsonData = null; }
+        if (jsonResp.ok && jsonData && jsonData.access_token) {
+            authToken = jsonData.access_token;
+            // Stocker token + user si fourni
+            try { localStorage.setItem('authToken', authToken); } catch (_) {}
+            currentUser = jsonData.user || await apiCall('/users/me');
+            try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch (_) {}
+            showMainContent();
+            showAlert('Connexion réussie !');
+            return;
+        }
+
+        // 2) Fallback: flux OAuth2 standard /token (x-www-form-urlencoded)
+        const body = new URLSearchParams();
+        body.append('username', email);
+        body.append('password', password);
+        const tokenResp = await fetch(`${CONFIG.API_BASE_URL}/token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body
         });
-        
-        // Tenter de lire la réponse JSON quelle que soit la valeur de ok
-        let data = null;
-        try {
-            data = await response.json();
-        } catch (e) {
-            data = null;
-        }
-        
-        // Si l'API remonte une erreur explicite ou pas de token, lever une erreur claire
-        if (!response.ok || !data || !data.access_token) {
-            const apiMessage = data && (data.error || data.message || data.detail);
+        let tokenData = null;
+        try { tokenData = await tokenResp.json(); } catch (_) { tokenData = null; }
+        if (!tokenResp.ok || !tokenData || !tokenData.access_token) {
+            const apiMessage = (jsonData && (jsonData.error || jsonData.message || jsonData.detail))
+                || (tokenData && (tokenData.error || tokenData.message || tokenData.detail));
             throw new Error(apiMessage || 'Email ou mot de passe incorrect');
         }
-        
-        authToken = data.access_token;
-        // Persister le token pour les rechargements
-        try {
-            localStorage.setItem('authToken', authToken);
-        } catch (e) {
-            console.warn('Impossible de stocker le token', e);
-        }
-        
-        // Récupérer les infos utilisateur
+        authToken = tokenData.access_token;
+        try { localStorage.setItem('authToken', authToken); } catch (_) {}
         currentUser = await apiCall('/users/me');
-        // Persister l'utilisateur courant
-        try {
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        } catch (e) {
-            console.warn('Impossible de stocker les infos utilisateur', e);
-        }
-        
+        try { localStorage.setItem('currentUser', JSON.stringify(currentUser)); } catch (_) {}
         showMainContent();
         showAlert('Connexion réussie !');
-        
     } catch (error) {
-        showAlert(error.message, 'error');
+        showAlert(error.message || 'Erreur de connexion', 'error');
     }
 }
 
