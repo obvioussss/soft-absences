@@ -100,10 +100,10 @@ SECRET_KEY=QnkS3Fd5HGG9S_HqUQq4wqxXrfjiPJmL7wBocAYPp-c
 ```
 
 ### URLs de test
-- **Application :** `https://soft-absences.vercel.app`
-- **Health check :** `https://soft-absences.vercel.app/health`
-- **API users :** `https://soft-absences.vercel.app/users`
-- **API absences :** `https://soft-absences.vercel.app/absence-requests`
+- **Application :** `https://soft-absences-zeta.vercel.app`
+- **Health check :** `https://soft-absences-zeta.vercel.app/health`
+- **API users :** `https://soft-absences-zeta.vercel.app/users`
+- **API absences :** `https://soft-absences-zeta.vercel.app/absence-requests`
 
 ---
 

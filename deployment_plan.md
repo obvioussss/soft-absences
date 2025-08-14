@@ -116,8 +116,8 @@ git push origin main
 ## 📊 Monitoring et maintenance
 
 ### URLs importantes
-- **Application** : `https://soft-absences.vercel.app`
-- **API Health** : `https://soft-absences.vercel.app/health`
+- **Application** : `https://soft-absences-zeta.vercel.app`
+- **API Health** : `https://soft-absences-zeta.vercel.app/health`
 - **Dashboard Vercel** : Dashboard Vercel pour monitoring
 
 ### Points de surveillance
