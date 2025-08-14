@@ -11,11 +11,20 @@ async function login(email, password) {
             body
         });
         
-        if (!response.ok) {
-            throw new Error('Email ou mot de passe incorrect');
+        // Tenter de lire la réponse JSON quelle que soit la valeur de ok
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (e) {
+            data = null;
         }
         
-        const data = await response.json();
+        // Si l'API remonte une erreur explicite ou pas de token, lever une erreur claire
+        if (!response.ok || !data || !data.access_token) {
+            const apiMessage = data && (data.error || data.message || data.detail);
+            throw new Error(apiMessage || 'Email ou mot de passe incorrect');
+        }
+        
         authToken = data.access_token;
         // Persister le token pour les rechargements
         try {
