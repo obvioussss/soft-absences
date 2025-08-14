@@ -10,7 +10,6 @@
   ],
   "env": {
     "ENVIRONMENT": "production",
-    "SECRET_KEY": "@secret_key",
-    "DATABASE_URL": "sqlite:////tmp/absences.db"
+    "SECRET_KEY": "@secret_key"
   }
 }

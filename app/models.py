@@ -1,6 +1,6 @@
 from sqlalchemy import Boolean, Column, Integer, String, DateTime, Date, Text, ForeignKey, Enum
 from sqlalchemy.orm import DeclarativeBase, relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 
 class Base(DeclarativeBase):
@@ -30,8 +30,8 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.USER, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     annual_leave_days = Column(Integer, default=25, nullable=False)  # Jours de congés annuels
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relations
     absence_requests = relationship("AbsenceRequest", foreign_keys="AbsenceRequest.user_id", back_populates="user")
@@ -51,8 +51,8 @@ class AbsenceRequest(Base):
     approved_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     admin_comment = Column(Text, nullable=True)
     google_calendar_event_id = Column(String, nullable=True)  # ID de l'événement Google Calendar
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relations
     user = relationship("User", foreign_keys=[user_id], back_populates="absence_requests")
@@ -70,8 +70,8 @@ class SicknessDeclaration(Base):
     pdf_path = Column(String, nullable=True)      # Chemin vers le fichier sur le serveur
     email_sent = Column(Boolean, default=False, nullable=False)  # Si l'email a été envoyé
     viewed_by_admin = Column(Boolean, default=False, nullable=False)  # Si vu par l'admin
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relations
     user = relationship("User", back_populates="sickness_declarations")

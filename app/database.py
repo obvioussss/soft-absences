@@ -11,8 +11,14 @@ ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 if ENVIRONMENT == "test":
     DATABASE_URL = os.getenv("DATABASE_URL_TEST", "sqlite:///./test_absences.db")
 elif ENVIRONMENT == "production":
-    # En production sur Vercel, utiliser une base en mémoire
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///:memory:")
+    # En production, prioriser Neon/PostgreSQL puis SQLite fichier
+    DATABASE_URL = (
+        os.getenv("DATABASE_URL") or
+        os.getenv("POSTGRES_URL") or 
+        os.getenv("POSTGRES_PRISMA_URL") or
+        os.getenv("NEON_DATABASE_URL") or
+        "sqlite:///./absences.db"  # Fallback vers fichier plutôt que mémoire
+    )
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./absences.db")
 
