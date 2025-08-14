@@ -1135,9 +1135,20 @@ class handler(BaseHTTPRequestHandler):
                     else:
                         response = {"error": "Email ou mot de passe incorrect"}
             elif self.path == '/admin/reset-db':
-                # Endpoint ADMIN-ONLY pour réinitialiser la base en production
+                # Endpoint ADMIN-ONLY (avec token bootstrap alternatif) pour réinitialiser la base en production
                 current_user = get_user_from_auth_header(self.headers)
-                if not current_user or current_user.get('role') != 'admin':
+                # Autorisation via rôle admin OU via jeton de bootstrap
+                bootstrap_token = os.getenv('BOOTSTRAP_TOKEN', '').strip()
+                header_token = self.headers.get('X-Bootstrap-Token') or ''
+                # Permettre aussi via query param ?token=...
+                try:
+                    from urllib.parse import urlparse, parse_qs as _pqs
+                    q_token = (_pqs(urlparse(self.path).query).get('token') or [''])[0]
+                except Exception:
+                    q_token = ''
+                is_admin = bool(current_user and current_user.get('role') == 'admin')
+                is_bootstrap = bool(bootstrap_token and (header_token == bootstrap_token or q_token == bootstrap_token))
+                if not (is_admin or is_bootstrap):
                     response = {"error": "Forbidden"}
                 else:
                     try:
@@ -1188,6 +1199,50 @@ class handler(BaseHTTPRequestHandler):
                         response = {"message": "Database reset completed"}
                     except Exception as e:
                         response = {"error": str(e)}
+            elif self.path == '/admin/reset-user' and isinstance(data, dict):
+                # Réinitialise le mot de passe d'un utilisateur spécifique à admin123
+                current_user = get_user_from_auth_header(self.headers)
+                bootstrap_token = os.getenv('BOOTSTRAP_TOKEN', '').strip()
+                header_token = self.headers.get('X-Bootstrap-Token') or ''
+                try:
+                    from urllib.parse import urlparse, parse_qs as _pqs
+                    q_token = (_pqs(urlparse(self.path).query).get('token') or [''])[0]
+                except Exception:
+                    q_token = ''
+                is_admin = bool(current_user and current_user.get('role') == 'admin')
+                is_bootstrap = bool(bootstrap_token and (header_token == bootstrap_token or q_token == bootstrap_token))
+                if not (is_admin or is_bootstrap):
+                    response = {"error": "Forbidden"}
+                else:
+                    email = (data or {}).get('email') or ''
+                    if not email:
+                        response = {"error": "Email requis"}
+                    else:
+                        try:
+                            conn = init_db(); cursor = conn.cursor()
+                            # Vérifier existence
+                            try:
+                                cursor.execute('SELECT id FROM users WHERE email = %s', (email,))
+                                row = cursor.fetchone()
+                            except Exception:
+                                cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+                                row = cursor.fetchone()
+                            if not row:
+                                response = {"error": "Utilisateur introuvable"}
+                            else:
+                                # Mettre à jour le hash du mot de passe
+                                try:
+                                    cursor.execute('UPDATE users SET password_hash = %s WHERE email = %s', (hash_password('admin123'), email))
+                                except Exception:
+                                    cursor.execute('UPDATE users SET password_hash = ? WHERE email = ?', (hash_password('admin123'), email))
+                                try:
+                                    conn.commit()
+                                except Exception:
+                                    pass
+                                response = {"message": "Mot de passe réinitialisé", "email": email, "new_password": "admin123"}
+                            conn.close()
+                        except Exception as e:
+                            response = {"error": str(e)}
             elif self.path.rstrip('/') == '/absence-requests':
                 # Créer une demande d'absence
                 current_user = get_user_from_auth_header(self.headers)
