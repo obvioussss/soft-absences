@@ -1003,6 +1003,22 @@ class handler(BaseHTTPRequestHandler):
                         response = user_info
                     else:
                         response = {"error": "Unauthorized"}
+                elif path == '/auth/bootstrap-token':
+                    # Obtenir un token admin temporaire via BOOTSTRAP_TOKEN
+                    bootstrap_token = os.getenv('BOOTSTRAP_TOKEN', '').strip()
+                    provided = self.headers.get('X-Bootstrap-Token') or ''
+                    try:
+                        provided = provided or (parse_qs(parsed_url.query).get('token') or [''])[0]
+                    except Exception:
+                        pass
+                    if bootstrap_token and provided == bootstrap_token:
+                        # fabriquer un token admin minimal
+                        response = {
+                            "access_token": create_access_token({"sub": DEFAULT_ADMIN_EMAIL, "user_id": 0, "role": "admin"}),
+                            "token_type": "bearer"
+                        }
+                    else:
+                        response = {"error": "Forbidden"}
                 elif path.startswith('/users/'):
                     # /users/{id} or /users/{id}/absence-summary
                     segments = path.strip('/').split('/')
