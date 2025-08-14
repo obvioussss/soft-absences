@@ -1066,7 +1066,7 @@ class handler(BaseHTTPRequestHandler):
                     else:
                         response = {"error": "Unauthorized"}
                 elif path == '/admin/reset-user':
-                    # Variante GET pour réinitialiser un utilisateur sans passer par POST (contourne bug do_POST)
+                    # Variante GET ultra-simple pour réinitialiser un utilisateur (contourne tous les bugs)
                     params = parse_qs(parsed_url.query)
                     email = (params.get('email') or [''])[0]
                     # Signature HMAC simplifiée: sha256(SECRET_KEY + email)
@@ -1077,28 +1077,26 @@ class handler(BaseHTTPRequestHandler):
                         response = {"error": "Forbidden"}
                     else:
                         try:
-                            conn = init_db(); cursor = conn.cursor()
-                            try:
-                                cursor.execute('SELECT id FROM users WHERE email = %s', (email,))
-                                row = cursor.fetchone()
-                            except Exception:
-                                cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
-                                row = cursor.fetchone()
+                            # Connexion SQLite directe sans init_db() pour éviter les crashes
+                            import sqlite3
+                            db_file = os.getenv('DB_FILE', '/tmp/soft_absences.db')
+                            conn = sqlite3.connect(db_file)
+                            cursor = conn.cursor()
+                            
+                            # Vérifier existence utilisateur
+                            cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
+                            row = cursor.fetchone()
                             if not row:
                                 response = {"error": "Utilisateur introuvable"}
                             else:
-                                try:
-                                    cursor.execute('UPDATE users SET password_hash = %s WHERE email = %s', (hash_password('admin123'), email))
-                                except Exception:
-                                    cursor.execute('UPDATE users SET password_hash = ? WHERE email = ?', (hash_password('admin123'), email))
-                                try:
-                                    conn.commit()
-                                except Exception:
-                                    pass
+                                # Mettre à jour le hash du mot de passe
+                                new_hash = hashlib.sha256("admin123".encode()).hexdigest()
+                                cursor.execute('UPDATE users SET password_hash = ? WHERE email = ?', (new_hash, email))
+                                conn.commit()
                                 response = {"message": "Mot de passe réinitialisé", "email": email, "new_password": "admin123"}
                             conn.close()
                         except Exception as e:
-                            response = {"error": str(e)}
+                            response = {"error": f"Erreur SQLite: {str(e)}"}
                 elif path == '/auth/bootstrap-token':
                     # Obtenir un token admin temporaire via BOOTSTRAP_TOKEN
                     bootstrap_token = os.getenv('BOOTSTRAP_TOKEN', '').strip()
