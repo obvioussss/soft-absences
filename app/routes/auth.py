@@ -42,7 +42,7 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": user.role
+            "role": user.role.value  # Utiliser .value pour obtenir la chaîne
         }
     }
 
