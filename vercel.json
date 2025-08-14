@@ -1,23 +1,16 @@
 {
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.9"
+    }
+  },
   "routes": [
-    { "src": "/", "dest": "/static/index.html" },
-    { "src": "/dashboard/?", "dest": "/static/index.html" },
-
-    { "src": "/js/(.*)", "dest": "/static/js/$1" },
-    { "src": "/css/(.*)", "dest": "/static/css/$1" },
-    { "src": "/style.css", "dest": "/static/style.css" },
-    { "src": "/favicon.ico", "dest": "/static/favicon.ico" },
-
     { "src": "/static/(.*)", "dest": "/static/$1" },
-    { "src": "/(.*)\\.(js|css)", "headers": { "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'" } },
-
-    { "src": "/auth/login", "dest": "/api/simple_login.py" },
-    { "src": "/(users|absence-requests|calendar|sickness-declarations|token|api|health|admin)(.*)", "dest": "/api/index.py" }
+    { "src": "/(.*)", "dest": "/api/index.py" }
   ],
   "env": {
     "ENVIRONMENT": "production",
-    "DB_FILE": "/tmp/soft_absences.db",
-    "DATABASE_URL": "",
-    "UPLOAD_DIR": "/tmp/sickness_declarations"
+    "SECRET_KEY": "@secret_key",
+    "DATABASE_URL": "sqlite:////tmp/absences.db"
   }
 }

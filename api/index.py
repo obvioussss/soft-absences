@@ -818,7 +818,7 @@ def handle_login(data):
                     "email": user[1],
                     "first_name": user[2],
                     "last_name": user[3],
-                    "role": user[5]
+                    "role": user[5].lower() if isinstance(user[5], str) else user[5]
                 },
                 "access_token": access_token,
                 "token_type": "bearer"
@@ -827,7 +827,7 @@ def handle_login(data):
             # Fallback bootstrap: autoriser le compte admin par défaut même si la base est vide
             if email == DEFAULT_ADMIN_EMAIL and (password == 'admin123' or verify_password(password, hash_password('admin123'))):
                 access_token = create_access_token(
-                    data={"sub": email, "user_id": 1, "role": "ADMIN"}
+                    data={"sub": email, "user_id": 1, "role": "admin"}
                 )
                 return {
                     "success": True,
@@ -837,7 +837,7 @@ def handle_login(data):
                         "email": email,
                         "first_name": "Admin",
                         "last_name": "System",
-                        "role": "ADMIN"
+                        "role": "admin"
                     },
                     "access_token": access_token,
                     "token_type": "bearer"
@@ -1266,7 +1266,7 @@ class handler(BaseHTTPRequestHandler):
                 data["__fs__"] = fs
 
             # Reporter l'écriture des headers après la construction de la réponse
-            if self.path == '/auth/login' and isinstance(data, dict):
+            if (self.path == '/auth/login' or self.path == '/login') and isinstance(data, dict):
                 response = handle_login(data)
             elif self.path == '/token' and isinstance(data, dict):
                 # OAuth2PasswordRequestForm: username, password
@@ -1350,13 +1350,13 @@ class handler(BaseHTTPRequestHandler):
                             try:
                                 cursor.execute(
                                     'INSERT INTO users (email, first_name, last_name, password_hash, role) VALUES (%s, %s, %s, %s, %s)',
-                                    (DEFAULT_ADMIN_EMAIL, 'Admin', 'System', hash_password('admin123'), 'ADMIN')
+                                    (DEFAULT_ADMIN_EMAIL, 'Admin', 'System', hash_password('admin123'), 'admin')
                                 )
                             except Exception:
                                 try:
                                     cursor.execute(
                                         'INSERT INTO users (email, first_name, last_name, password_hash, role) VALUES (?, ?, ?, ?, ?)',
-                                        (DEFAULT_ADMIN_EMAIL, 'Admin', 'System', hash_password('admin123'), 'ADMIN')
+                                        (DEFAULT_ADMIN_EMAIL, 'Admin', 'System', hash_password('admin123'), 'admin')
                                     )
                                 except Exception:
                                     pass
@@ -1436,7 +1436,7 @@ class handler(BaseHTTPRequestHandler):
                             conn.commit()
                             new_id = cursor.lastrowid
                             # Email aux admins + fallback
-                            cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                            cursor.execute("SELECT email FROM users WHERE role='admin'")
                             admin_rows = cursor.fetchall() or []
                             admin_emails = [r[0] for r in admin_rows]
                             if DEFAULT_ADMIN_EMAIL not in admin_emails:
@@ -1532,7 +1532,7 @@ class handler(BaseHTTPRequestHandler):
                             try:
                                 subject = f"Gestion des absences - Déclaration maladie - {current_user['first_name']} {current_user['last_name']}"
                                 body = f"Déclaration du {start_date} au {end_date}. Description: {description or '—'}"
-                                cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                                cursor.execute("SELECT email FROM users WHERE role='admin'")
                                 admin_rows = cursor.fetchall() or []
                                 recipients = [r[0] for r in admin_rows]
                                 if DEFAULT_ADMIN_EMAIL not in recipients:
@@ -1606,7 +1606,7 @@ class handler(BaseHTTPRequestHandler):
                             cursor.execute('SELECT email, first_name, last_name FROM users WHERE id = %s', (user_id,))
                             urow = cursor.fetchone() or (None, '', '')
                             user_email = urow[0]
-                            cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                            cursor.execute("SELECT email FROM users WHERE role='admin'")
                             admin_rows = cursor.fetchall() or []
                             recipients = [r[0] for r in admin_rows]
                             if DEFAULT_ADMIN_EMAIL not in recipients:
@@ -1686,7 +1686,7 @@ class handler(BaseHTTPRequestHandler):
                                 except Exception:
                                     attachment_path = None
                             # Construire destinataires: admins + user
-                            cursor.execute("SELECT email FROM users WHERE UPPER(role)='ADMIN'")
+                            cursor.execute("SELECT email FROM users WHERE role='admin'")
                             admin_rows = cursor.fetchall() or []
                             recipients = [r[0] for r in admin_rows]
                             if DEFAULT_ADMIN_EMAIL not in recipients:
