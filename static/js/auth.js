@@ -2,7 +2,7 @@
 async function login(email, password) {
     try {
         // 1) Essai principal: endpoint JSON dédié
-        const jsonResp = await fetch(`${CONFIG.API_BASE_URL}/login`, {
+        const jsonResp = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
