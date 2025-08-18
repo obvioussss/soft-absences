@@ -70,6 +70,7 @@ class SicknessDeclaration(Base):
     pdf_path = Column(String, nullable=True)      # Chemin vers le fichier sur le serveur
     email_sent = Column(Boolean, default=False, nullable=False)  # Si l'email a été envoyé
     viewed_by_admin = Column(Boolean, default=False, nullable=False)  # Si vu par l'admin
+    google_calendar_event_id = Column(String, nullable=True)  # ID de l'événement Google Calendar
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 

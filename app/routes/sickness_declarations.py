@@ -6,6 +6,7 @@ from app.database import get_db
 from app import models, schemas, crud, auth
 from app.email_service import email_service
 from app.file_service import file_service
+from app.google_calendar_service import google_calendar_service
 
 router = APIRouter()
 
@@ -60,6 +61,15 @@ async def create_sickness_declaration_admin(
         )
         if email_sent:
             crud.mark_sickness_declaration_email_sent(db, db_declaration.id)
+        
+        # Créer l'événement dans Google Calendar
+        if google_calendar_service.is_configured():
+            event_id = google_calendar_service.create_sickness_event(db_declaration)
+            if event_id:
+                # Mettre à jour la déclaration avec l'ID de l'événement Google Calendar
+                db_declaration.google_calendar_event_id = event_id
+                db.commit()
+        
         db.refresh(db_declaration)
     except Exception as e:
         db.delete(db_declaration)
@@ -138,6 +148,14 @@ async def create_sickness_declaration(
         
         if email_sent:
             crud.mark_sickness_declaration_email_sent(db, db_declaration.id)
+        
+        # Créer l'événement dans Google Calendar
+        if google_calendar_service.is_configured():
+            event_id = google_calendar_service.create_sickness_event(db_declaration)
+            if event_id:
+                # Mettre à jour la déclaration avec l'ID de l'événement Google Calendar
+                db_declaration.google_calendar_event_id = event_id
+                db.commit()
         
         # Rafraîchir pour obtenir les données mises à jour
         db.refresh(db_declaration)

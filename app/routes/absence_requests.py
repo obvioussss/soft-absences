@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas, crud, auth
 from app.email_service import email_service
+from app.google_calendar_service import google_calendar_service
 
 router = APIRouter()
 
@@ -65,6 +66,14 @@ async def create_absence_request(
     
     db_request = crud.create_absence_request(db=db, request=request, user_id=current_user.id)
     
+    # Créer l'événement dans Google Calendar
+    if google_calendar_service.is_configured():
+        event_id = google_calendar_service.create_event(db_request)
+        if event_id:
+            # Mettre à jour la demande avec l'ID de l'événement Google Calendar
+            db_request.google_calendar_event_id = event_id
+            db.commit()
+    
     # Notifier les admins par email
     admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
     admin_emails = [admin.email for admin in admin_users]
@@ -113,6 +122,16 @@ async def admin_update_absence(
         )
         updated = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
     
+    # Mettre à jour l'événement Google Calendar
+    if google_calendar_service.is_configured() and updated.google_calendar_event_id:
+        google_calendar_service.update_event(updated.google_calendar_event_id, updated)
+    elif google_calendar_service.is_configured() and not updated.google_calendar_event_id:
+        # Créer l'événement s'il n'existe pas encore
+        event_id = google_calendar_service.create_event(updated)
+        if event_id:
+            updated.google_calendar_event_id = event_id
+            db.commit()
+    
     return updated
 
 @router.delete("/admin/{request_id}")
@@ -125,6 +144,11 @@ async def admin_delete_absence(
     db_request = crud.get_absence_request(db, request_id=request_id)
     if db_request is None:
         raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Supprimer l'événement Google Calendar s'il existe
+    if google_calendar_service.is_configured() and db_request.google_calendar_event_id:
+        google_calendar_service.delete_event(db_request.google_calendar_event_id)
+    
     crud.delete_absence_request(db=db, request_id=request_id)
     return {"message": "Absence supprimée"}
 
@@ -141,6 +165,14 @@ async def create_admin_absence(
         raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
     
     db_request = crud.create_admin_absence(db=db, request=request, admin_id=current_user.id)
+    
+    # Créer l'événement dans Google Calendar
+    if google_calendar_service.is_configured():
+        event_id = google_calendar_service.create_event(db_request)
+        if event_id:
+            # Mettre à jour la demande avec l'ID de l'événement Google Calendar
+            db_request.google_calendar_event_id = event_id
+            db.commit()
     
     # Notifier l'utilisateur par email
     user_name = f"{target_user.first_name} {target_user.last_name}"
@@ -171,6 +203,16 @@ async def update_absence_request_status(
         raise HTTPException(status_code=404, detail="Demande non trouvée")
     
     updated_request = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
+    
+    # Mettre à jour l'événement Google Calendar
+    if google_calendar_service.is_configured() and updated_request.google_calendar_event_id:
+        google_calendar_service.update_event(updated_request.google_calendar_event_id, updated_request)
+    elif google_calendar_service.is_configured() and not updated_request.google_calendar_event_id:
+        # Créer l'événement s'il n'existe pas encore
+        event_id = google_calendar_service.create_event(updated_request)
+        if event_id:
+            updated_request.google_calendar_event_id = event_id
+            db.commit()
     
     # Notifier l'utilisateur par email
     user_name = f"{db_request.user.first_name} {db_request.user.last_name}"
@@ -225,6 +267,16 @@ async def update_absence_request(
     
     updated_request = crud.update_absence_request(db=db, request_id=request_id, request_update=request_update)
     
+    # Mettre à jour l'événement Google Calendar
+    if google_calendar_service.is_configured() and updated_request.google_calendar_event_id:
+        google_calendar_service.update_event(updated_request.google_calendar_event_id, updated_request)
+    elif google_calendar_service.is_configured() and not updated_request.google_calendar_event_id:
+        # Créer l'événement s'il n'existe pas encore
+        event_id = google_calendar_service.create_event(updated_request)
+        if event_id:
+            updated_request.google_calendar_event_id = event_id
+            db.commit()
+    
     # Notifier les admins de la modification
     admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()
     admin_emails = [admin.email for admin in admin_users]
@@ -259,6 +311,10 @@ async def delete_absence_request(
     # Seul le propriétaire peut supprimer sa demande
     if db_request.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Accès non autorisé")
+    
+    # Supprimer l'événement Google Calendar s'il existe
+    if google_calendar_service.is_configured() and db_request.google_calendar_event_id:
+        google_calendar_service.delete_event(db_request.google_calendar_event_id)
     
     # Notifier les admins de la suppression avant de supprimer la demande
     admin_users = db.query(models.User).filter(models.User.role == models.UserRole.ADMIN).all()

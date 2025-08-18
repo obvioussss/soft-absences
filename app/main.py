@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from app.database import engine, get_db
 from app.models import Base
 from app import models, schemas, crud, auth as app_auth
-from app.routes import auth, users, absence_requests, dashboard, calendar, sickness_declarations
+from app.routes import auth, users, absence_requests, dashboard, calendar, sickness_declarations, google_calendar
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -72,6 +72,7 @@ app.include_router(absence_requests.router, prefix="/absence-requests", tags=["a
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
 app.include_router(sickness_declarations.router, prefix="/sickness-declarations", tags=["sickness-declarations"])
+app.include_router(google_calendar.router, prefix="/google-calendar", tags=["google-calendar"])
 
 if __name__ == "__main__":
     import uvicorn
