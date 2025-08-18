@@ -522,6 +522,45 @@ async function loadAdminSicknessDeclarations() {
     }
 }
 
+// Fonction pour ouvrir un PDF de déclaration de maladie avec authentification
+async function openSicknessPdf(declarationId) {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/${declarationId}/pdf`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Non authentifié');
+            } else if (response.status === 403) {
+                throw new Error('Accès non autorisé');
+            } else if (response.status === 404) {
+                throw new Error('Document non trouvé');
+            } else {
+                throw new Error('Erreur lors du chargement du document');
+            }
+        }
+        
+        // Créer un blob à partir de la réponse
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Ouvrir le PDF dans un nouvel onglet
+        window.open(url, '_blank');
+        
+        // Nettoyer l'URL après un délai pour libérer la mémoire
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+        }, 1000);
+        
+    } catch (error) {
+        showAlert(`Erreur lors de l'ouverture du document: ${error.message}`, 'error');
+    }
+}
+
 // Documents (liste consolidée des PDFs de maladie)
 async function loadAdminDocuments() {
     const container = document.getElementById('admin-documents-list');
@@ -540,13 +579,12 @@ const declarations = await apiCall('/sickness-declarations');
             const startDate = formatDateSafe(d.start_date);
             const endDate = formatDateSafe(d.end_date);
             const createdDate = formatDateSafe(d.created_at);
-            const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${d.id}/pdf`;
             html += `<tr>
                 <td>${d.pdf_filename}</td>
                 <td>${d.user ? `${d.user.first_name} ${d.user.last_name} (${d.user.email})` : '—'}</td>
                 <td>${startDate === endDate ? startDate : `${startDate} - ${endDate}`}</td>
                 <td>${createdDate}</td>
-                <td><a class="btn" href="${url}" target="_blank" rel="noopener">Ouvrir</a></td>
+                <td><button class="btn" onclick="openSicknessPdf(${d.id})">Ouvrir</button></td>
             </tr>`;
         });
         html += '</tbody></table>';

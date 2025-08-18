@@ -138,7 +138,7 @@ async function loadSicknessDeclarations() {
                 const createdDate = formatDateSafe(declaration.created_at);
                 
                 const pdfCell = declaration.pdf_filename ? `
-                    ✅ <a href="${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf" target="_blank" rel="noopener">${declaration.pdf_filename}</a>
+                    ✅ <button class="btn-link" onclick="openSicknessPdf(${declaration.id})">${declaration.pdf_filename}</button>
                 ` : '❌ Aucun fichier';
                 
                 html += `
@@ -162,15 +162,49 @@ async function loadSicknessDeclarations() {
     }
 }
 
-// Prévisualisation PDF dans une popup (modal simple)
-function previewPdf(declarationId) {
-    const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${declarationId}/pdf`;
-    // Ouvre dans un nouvel onglet si le navigateur bloque les modales
-    const w = window.open(url, '_blank');
-    if (!w) {
-        // fallback si popups bloquées
-        window.location.href = url;
+// Fonction pour ouvrir un PDF de déclaration de maladie avec authentification
+async function openSicknessPdf(declarationId) {
+    try {
+        const response = await fetch(`${CONFIG.API_BASE_URL}/sickness-declarations/${declarationId}/pdf`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Non authentifié');
+            } else if (response.status === 403) {
+                throw new Error('Accès non autorisé');
+            } else if (response.status === 404) {
+                throw new Error('Document non trouvé');
+            } else {
+                throw new Error('Erreur lors du chargement du document');
+            }
+        }
+        
+        // Créer un blob à partir de la réponse
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Ouvrir le PDF dans un nouvel onglet
+        window.open(url, '_blank');
+        
+        // Nettoyer l'URL après un délai pour libérer la mémoire
+        setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+        }, 1000);
+        
+    } catch (error) {
+        showAlert(`Erreur lors de l'ouverture du document: ${error.message}`, 'error');
     }
+}
+
+// Prévisualisation PDF dans une popup (modal simple) - DEPRECATED
+function previewPdf(declarationId) {
+    // Utiliser la nouvelle fonction avec authentification
+    openSicknessPdf(declarationId);
 }
 
 // Fonction pour charger les déclarations de maladie pour les admins
@@ -235,8 +269,7 @@ async function loadAllSicknessDeclarations() {
                 // Statut du PDF avec plus de détails
                 let pdfStatus = '❌ <span style="color: #e74c3c;">Aucun document</span>';
                 if (declaration.pdf_filename) {
-                    const url = `${CONFIG.API_BASE_URL}/sickness-declarations/${declaration.id}/pdf`;
-                    pdfStatus = `✅ <a href="${url}" target="_blank" rel="noopener">${declaration.pdf_filename}</a>`;
+                    pdfStatus = `✅ <button class="btn-link" onclick="openSicknessPdf(${declaration.id})">${declaration.pdf_filename}</button>`;
                 }
                 
                 // Statut email avec plus de clarté

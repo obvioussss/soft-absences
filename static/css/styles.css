@@ -39,6 +39,24 @@ body {
     margin-bottom: 20px;
 }
 
+/* Bouton-lien pour les documents */
+.btn-link {
+    background: none;
+    border: none;
+    color: #2c3e50;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: inherit;
+    font-family: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+.btn-link:hover {
+    color: #1a252f;
+    text-decoration: none;
+}
+
 .main-content {
     display: none;
 }
