@@ -335,7 +335,21 @@ class Calendar {
             reasonRow.style.display = 'none';
         }
 
-        document.getElementById('event-modal').style.display = 'flex';
+        const modal = document.getElementById('event-modal');
+        modal.style.display = 'flex';
+
+        // Ajouter la fonctionnalité pour fermer en cliquant en dehors du modal
+        const handleClickOutside = (e) => {
+            if (e.target === modal) {
+                closeEventModal();
+                modal.removeEventListener('click', handleClickOutside);
+            }
+        };
+        
+        // Ajouter l'événement avec un petit délai pour éviter la fermeture immédiate
+        setTimeout(() => {
+            modal.addEventListener('click', handleClickOutside);
+        }, 100);
 
         // Activer les actions admin pour les demandes d'absence uniquement
         const isAdmin = currentUser && currentUser.role === 'admin';
@@ -438,7 +452,12 @@ class Calendar {
 }
 
 function closeEventModal() {
-    document.getElementById('event-modal').style.display = 'none';
+    const modal = document.getElementById('event-modal');
+    modal.style.display = 'none';
+    
+    // Nettoyer les event listeners pour éviter les fuites mémoire
+    const newModal = modal.cloneNode(true);
+    modal.parentNode.replaceChild(newModal, modal);
 }
 
 // Initialiser le calendrier quand la section est affichée

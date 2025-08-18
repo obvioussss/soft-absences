@@ -165,35 +165,7 @@ function showSubTab(subTabName) {
     }
 }
 
-// API Calls
-async function apiCall(endpoint, options = {}) {
-    const url = `${CONFIG.API_BASE_URL}${endpoint}`;
-    const config = {
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers
-        },
-        ...options
-    };
-    
-    if (authToken) {
-        config.headers['Authorization'] = `Bearer ${authToken}`;
-    }
-    
-    try {
-        const response = await fetch(url, config);
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.detail || 'Erreur API');
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('Erreur API:', error);
-        throw error;
-    }
-}
+// La fonction apiCall est définie dans main.js pour éviter les duplications
 
 // Utilitaires de formulaire
 

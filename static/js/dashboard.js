@@ -36,14 +36,8 @@ async function loadDashboard() {
     } else {
         // Dashboard pour utilisateurs normaux
         try {
-			// Certaines plateformes (Vercel) exposent l'API sous /api/*
-			// On tente d'abord /api/dashboard puis on bascule sur /dashboard/ en fallback pour le dev local
-			let dashboardData;
-			try {
-				dashboardData = await apiCall('/api/dashboard');
-			} catch (e) {
-				dashboardData = await apiCall('/dashboard/');
-			}
+			            // Appel direct à l'endpoint dashboard
+			const dashboardData = await apiCall('/dashboard/');
             
 			// Sécuriser et normaliser les valeurs numériques
 			const usedDays = Number(dashboardData.used_leave_days) || 0;

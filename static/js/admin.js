@@ -7,6 +7,28 @@ async function loadUsers() {
         
         let html = '<table class="table"><thead><tr><th>Email</th><th>Nom</th><th>Rôle</th><th>Statut</th><th>Congés</th><th>Actions</th></tr></thead><tbody>';
         
+        // Récupérer les données de congés pour tous les utilisateurs non-admin
+        const currentYear = new Date().getFullYear();
+        const userVacationData = {};
+        
+        for (const user of users) {
+            if (user.role !== 'admin') {
+                try {
+                    const summary = await apiCall(`/calendar/summary/user/${user.id}?year=${currentYear}`);
+                    userVacationData[user.id] = {
+                        used: summary.used_leave_days || 0,
+                        total: summary.total_leave_days || user.annual_leave_days || 25
+                    };
+                } catch (error) {
+                    // En cas d'erreur, utiliser les valeurs par défaut
+                    userVacationData[user.id] = {
+                        used: 0,
+                        total: user.annual_leave_days || 25
+                    };
+                }
+            }
+        }
+        
         users.forEach(user => {
             // Ne pas permettre à l'admin de gérer son propre compte
             const isCurrentUser = currentUser && user.id === currentUser.id;
@@ -26,10 +48,18 @@ async function loadUsers() {
                                <button class="btn btn-danger" onclick="deleteUser(${user.id})">Supprimer</button>`;
             }
             
-            // Ne pas afficher le décompte de congés pour les administrateurs
-            const leaveDisplay = user.role === 'admin' ? 
-                '<span class="text-muted">—</span>' : 
-                `${user.annual_leave_days || 25} jours`;
+            // Affichage des congés : utilisés/total pour les utilisateurs, — pour les admins
+            let leaveDisplay;
+            if (user.role === 'admin') {
+                leaveDisplay = '<span class="text-muted">—</span>';
+            } else {
+                const vacationData = userVacationData[user.id];
+                if (vacationData) {
+                    leaveDisplay = `${vacationData.used}/${vacationData.total} jours`;
+                } else {
+                    leaveDisplay = `0/${user.annual_leave_days || 25} jours`;
+                }
+            }
             
             html += `
                 <tr>
@@ -155,6 +185,19 @@ async function loadAllRequests() {
 async function showAdminAbsenceForm() {
     const modal = document.getElementById('admin-absence-modal');
     modal.style.display = 'flex';
+
+    // Ajouter la fonctionnalité pour fermer en cliquant en dehors du modal
+    const handleClickOutside = (e) => {
+        if (e.target === modal) {
+            hideAdminAbsenceForm();
+            modal.removeEventListener('click', handleClickOutside);
+        }
+    };
+    
+    // Ajouter l'événement avec un petit délai pour éviter la fermeture immédiate
+    setTimeout(() => {
+        modal.addEventListener('click', handleClickOutside);
+    }, 100);
     
     // Charger la liste des utilisateurs
     try {
@@ -217,6 +260,19 @@ function hideAdminAbsenceForm() {
 function showAdminSicknessForm() {
     const modal = document.getElementById('admin-sickness-modal');
     modal.style.display = 'flex';
+
+    // Ajouter la fonctionnalité pour fermer en cliquant en dehors du modal
+    const handleClickOutside = (e) => {
+        if (e.target === modal) {
+            hideAdminSicknessForm();
+            modal.removeEventListener('click', handleClickOutside);
+        }
+    };
+    
+    // Ajouter l'événement avec un petit délai pour éviter la fermeture immédiate
+    setTimeout(() => {
+        modal.addEventListener('click', handleClickOutside);
+    }, 100);
     (async () => {
         try {
     const users = await apiCall('/users');
