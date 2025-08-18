@@ -86,7 +86,7 @@ def get_static_content(file_path):
                         </div>
                         <div class="calendar-actions">
                             <button id="today-btn" class="btn btn-secondary">Aujourd'hui</button>
-                            <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter absence</button>
+                            <button id="admin-add-absence-btn" class="btn btn-primary admin-only" onclick="showAdminAbsenceForm()" style="display: none;">➕ Ajouter Absence</button>
                             <div id="calendar-summary" class="calendar-summary" style="display: none;">
                                 <span id="summary-text"></span>
                             </div>

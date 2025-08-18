@@ -60,6 +60,108 @@ async def create_absence_request(
     
     return db_request
 
+# Routes admin spécifiques (doivent être déclarées AVANT les routes génériques)
+@router.put("/admin/{request_id}", response_model=schemas.AbsenceRequest)
+async def admin_update_absence(
+    request_id: int,
+    request_update: schemas.AdminAbsenceUpdate,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Modifier une absence existante (admin): dates, type, raison, statut, commentaire admin"""
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    # Appliquer les champs standards (ne pas écraser avec None)
+    standard_update = schemas.AbsenceRequestUpdate(
+        type=request_update.type if request_update.type is not None else db_request.type,
+        start_date=request_update.start_date,
+        end_date=request_update.end_date,
+        reason=request_update.reason
+    )
+    updated = crud.update_absence_request(db=db, request_id=request_id, request_update=standard_update)
+    
+    # Appliquer statut/commentaire si fournis
+    if request_update.status is not None or request_update.admin_comment is not None:
+        admin_update = schemas.AbsenceRequestAdmin(
+            status=request_update.status or updated.status,
+            admin_comment=request_update.admin_comment or updated.admin_comment
+        )
+        updated = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
+    
+    return updated
+
+@router.delete("/admin/{request_id}")
+async def admin_delete_absence(
+    request_id: int,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Supprimer une absence (admin)"""
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    crud.delete_absence_request(db=db, request_id=request_id)
+    return {"message": "Absence supprimée"}
+
+@router.post("/admin", response_model=schemas.AbsenceRequest)
+async def create_admin_absence(
+    request: schemas.AdminAbsenceCreate,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Créer une absence pour un utilisateur (admin uniquement)"""
+    # Vérifier que l'utilisateur cible existe
+    target_user = crud.get_user(db, user_id=request.user_id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    
+    db_request = crud.create_admin_absence(db=db, request=request, admin_id=current_user.id)
+    
+    # Notifier l'utilisateur par email
+    user_name = f"{target_user.first_name} {target_user.last_name}"
+    admin_name = f"{current_user.first_name} {current_user.last_name}"
+    email_service.send_admin_absence_notification(
+        user_email=target_user.email,
+        user_name=user_name,
+        admin_name=admin_name,
+        absence_type=request.type.value,
+        start_date=str(request.start_date),
+        end_date=str(request.end_date),
+        reason=request.reason,
+        admin_comment=request.admin_comment
+    )
+    
+    return db_request
+
+# Routes avec paramètres spécifiques
+@router.put("/{request_id}/status", response_model=schemas.AbsenceRequest)
+async def update_absence_request_status(
+    request_id: int,
+    admin_update: schemas.AbsenceRequestAdmin,
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    db_request = crud.get_absence_request(db, request_id=request_id)
+    if db_request is None:
+        raise HTTPException(status_code=404, detail="Demande non trouvée")
+    
+    updated_request = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
+    
+    # Notifier l'utilisateur par email
+    user_name = f"{db_request.user.first_name} {db_request.user.last_name}"
+    email_service.send_absence_status_notification(
+        user_email=db_request.user.email,
+        user_name=user_name,
+        absence_type=db_request.type.value,
+        status=admin_update.status.value,
+        admin_comment=admin_update.admin_comment
+    )
+    
+    return updated_request
+
+# Routes génériques (doivent être déclarées APRÈS les routes spécifiques)
 @router.get("/{request_id}", response_model=schemas.AbsenceRequest)
 async def read_absence_request(
     request_id: int,
@@ -117,75 +219,6 @@ async def update_absence_request(
     
     return updated_request
 
-@router.put("/admin/{request_id}", response_model=schemas.AbsenceRequest)
-async def admin_update_absence(
-    request_id: int,
-    request_update: schemas.AdminAbsenceUpdate,
-    current_user: models.User = Depends(auth.get_current_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Modifier une absence existante (admin): dates, type, raison, statut, commentaire admin"""
-    db_request = crud.get_absence_request(db, request_id=request_id)
-    if db_request is None:
-        raise HTTPException(status_code=404, detail="Demande non trouvée")
-    
-    # Appliquer les champs standards
-    standard_update = schemas.AbsenceRequestUpdate(
-        type=request_update.type,
-        start_date=request_update.start_date,
-        end_date=request_update.end_date,
-        reason=request_update.reason
-    )
-    updated = crud.update_absence_request(db=db, request_id=request_id, request_update=standard_update)
-    
-    # Appliquer statut/commentaire si fournis
-    if request_update.status is not None or request_update.admin_comment is not None:
-        admin_update = schemas.AbsenceRequestAdmin(
-            status=request_update.status or updated.status,
-            admin_comment=request_update.admin_comment or updated.admin_comment
-        )
-        updated = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
-    
-    return updated
-
-@router.delete("/admin/{request_id}")
-async def admin_delete_absence(
-    request_id: int,
-    current_user: models.User = Depends(auth.get_current_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Supprimer une absence (admin)"""
-    db_request = crud.get_absence_request(db, request_id=request_id)
-    if db_request is None:
-        raise HTTPException(status_code=404, detail="Demande non trouvée")
-    crud.delete_absence_request(db=db, request_id=request_id)
-    return {"message": "Absence supprimée"}
-
-@router.put("/{request_id}/status", response_model=schemas.AbsenceRequest)
-async def update_absence_request_status(
-    request_id: int,
-    admin_update: schemas.AbsenceRequestAdmin,
-    current_user: models.User = Depends(auth.get_current_admin_user),
-    db: Session = Depends(get_db)
-):
-    db_request = crud.get_absence_request(db, request_id=request_id)
-    if db_request is None:
-        raise HTTPException(status_code=404, detail="Demande non trouvée")
-    
-    updated_request = crud.update_absence_request_status(db=db, request_id=request_id, admin_update=admin_update, admin_id=current_user.id)
-    
-    # Notifier l'utilisateur par email
-    user_name = f"{db_request.user.first_name} {db_request.user.last_name}"
-    email_service.send_absence_status_notification(
-        user_email=db_request.user.email,
-        user_name=user_name,
-        absence_type=db_request.type.value,
-        status=admin_update.status.value,
-        admin_comment=admin_update.admin_comment
-    )
-    
-    return updated_request
-
 @router.delete("/{request_id}")
 async def delete_absence_request(
     request_id: int,
@@ -221,34 +254,4 @@ async def delete_absence_request(
     
     crud.delete_absence_request(db=db, request_id=request_id)
     return {"message": "Demande supprimée"}
-
-@router.post("/admin", response_model=schemas.AbsenceRequest)
-async def create_admin_absence(
-    request: schemas.AdminAbsenceCreate,
-    current_user: models.User = Depends(auth.get_current_admin_user),
-    db: Session = Depends(get_db)
-):
-    """Créer une absence pour un utilisateur (admin uniquement)"""
-    # Vérifier que l'utilisateur cible existe
-    target_user = crud.get_user(db, user_id=request.user_id)
-    if not target_user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    
-    db_request = crud.create_admin_absence(db=db, request=request, admin_id=current_user.id)
-    
-    # Notifier l'utilisateur par email
-    user_name = f"{target_user.first_name} {target_user.last_name}"
-    admin_name = f"{current_user.first_name} {current_user.last_name}"
-    email_service.send_admin_absence_notification(
-        user_email=target_user.email,
-        user_name=user_name,
-        admin_name=admin_name,
-        absence_type=request.type.value,
-        start_date=str(request.start_date),
-        end_date=str(request.end_date),
-        reason=request.reason,
-        admin_comment=request.admin_comment
-    )
-    
-    return db_request
 
