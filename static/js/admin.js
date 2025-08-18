@@ -622,6 +622,9 @@ async function loadAdminSicknessDeclarations() {
         const html = await loadAllSicknessDeclarations();
         sicknessListDiv.innerHTML = html;
         
+        // Mettre à jour le badge de notification après avoir chargé les déclarations
+        updatePendingRequestsBadge();
+        
     } catch (error) {
         sicknessListDiv.innerHTML = `<div class="alert alert-error">Erreur: ${error.message}</div>`;
     }
@@ -655,6 +658,11 @@ async function openSicknessPdf(declarationId) {
         
         // Ouvrir le PDF dans un nouvel onglet
         window.open(url, '_blank');
+        
+        // Mettre à jour le badge de notification car la déclaration est maintenant marquée comme vue
+        setTimeout(() => {
+            updatePendingRequestsBadge();
+        }, 1500);
         
         // Nettoyer l'URL après un délai pour libérer la mémoire
         setTimeout(() => {
