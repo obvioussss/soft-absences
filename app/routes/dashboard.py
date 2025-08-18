@@ -18,7 +18,8 @@ async def get_dashboard(
             used_leave_days=0,
             total_leave_days=0,
             pending_requests=0,
-            approved_requests=0
+            approved_requests=0,
+            sick_days=0
         )
     
     try:

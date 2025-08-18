@@ -48,6 +48,48 @@ def calculate_used_leave_days(db: Session, user_id: int, year: int = None) -> in
     
     return total_days
 
+def calculate_sick_days(db: Session, user_id: int, year: int = None) -> int:
+    """Calculer le nombre total de jours de maladie pour un utilisateur"""
+    if year is None:
+        year = datetime.now().year
+    
+    # Période de l'année civile
+    start_date = date(year, 1, 1)
+    end_date = date(year, 12, 31)
+    
+    total_sick_days = 0
+    
+    # Jours de maladie via AbsenceRequest
+    sick_requests = db.query(models.AbsenceRequest).filter(
+        and_(
+            models.AbsenceRequest.user_id == user_id,
+            models.AbsenceRequest.type == models.AbsenceType.MALADIE,
+            models.AbsenceRequest.status == models.AbsenceStatus.APPROUVE,
+            models.AbsenceRequest.start_date >= start_date,
+            models.AbsenceRequest.end_date <= end_date
+        )
+    ).all()
+    
+    for request in sick_requests:
+        days = calculate_business_days(request.start_date, request.end_date)
+        total_sick_days += days
+    
+    # Jours de maladie via SicknessDeclaration
+    from .sickness import get_sickness_declarations
+    sick_declarations = db.query(models.SicknessDeclaration).filter(
+        and_(
+            models.SicknessDeclaration.user_id == user_id,
+            models.SicknessDeclaration.start_date >= start_date,
+            models.SicknessDeclaration.end_date <= end_date
+        )
+    ).all()
+    
+    for declaration in sick_declarations:
+        days = calculate_business_days(declaration.start_date, declaration.end_date)
+        total_sick_days += days
+    
+    return total_sick_days
+
 def get_dashboard_data(db: Session, user_id: int) -> schemas.DashboardData:
     """Récupérer les données du tableau de bord pour un utilisateur"""
     user = get_user(db, user_id)
@@ -59,6 +101,7 @@ def get_dashboard_data(db: Session, user_id: int) -> schemas.DashboardData:
     used_days = calculate_used_leave_days(db, user_id, current_year)
     total_days = user.annual_leave_days
     remaining_days = total_days - used_days
+    sick_days = calculate_sick_days(db, user_id, current_year)
     
     # Compter les demandes en attente et approuvées
     pending_count = db.query(models.AbsenceRequest).filter(
@@ -80,7 +123,8 @@ def get_dashboard_data(db: Session, user_id: int) -> schemas.DashboardData:
         used_leave_days=used_days,
         total_leave_days=total_days,
         pending_requests=pending_count,
-        approved_requests=approved_count
+        approved_requests=approved_count,
+        sick_days=sick_days
     )
 
 def get_user_absence_summary(db: Session, user_id: int) -> schemas.UserAbsenceSummary:
@@ -91,7 +135,9 @@ def get_user_absence_summary(db: Session, user_id: int) -> schemas.UserAbsenceSu
     
     # Récupérer toutes les absences de l'utilisateur
     from .absences import get_absence_requests
+    from .sickness import get_sickness_declarations
     all_requests = get_absence_requests(db, user_id=user_id, limit=1000)
+    all_sickness_declarations = get_sickness_declarations(db, user_id=user_id, limit=1000)
     
     # Calculer les statistiques
     total_absence_days = 0
@@ -100,6 +146,7 @@ def get_user_absence_summary(db: Session, user_id: int) -> schemas.UserAbsenceSu
     pending_requests = 0
     approved_requests = 0
     
+    # Traiter les demandes d'absence
     for request in all_requests:
         if request.status == models.AbsenceStatus.APPROUVE:
             days = calculate_business_days(request.start_date, request.end_date)
@@ -113,6 +160,12 @@ def get_user_absence_summary(db: Session, user_id: int) -> schemas.UserAbsenceSu
             approved_requests += 1
         elif request.status == models.AbsenceStatus.EN_ATTENTE:
             pending_requests += 1
+    
+    # Traiter les déclarations de maladie
+    for declaration in all_sickness_declarations:
+        days = calculate_business_days(declaration.start_date, declaration.end_date)
+        sick_days += days
+        total_absence_days += days
     
     # Récupérer les 10 absences les plus récentes
     recent_requests = db.query(models.AbsenceRequest).filter(

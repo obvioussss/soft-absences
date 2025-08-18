@@ -79,6 +79,7 @@ body {
     cursor: pointer;
     font-size: 14px;
     transition: background-color 0.3s;
+    position: relative;
 }
 
 .nav-tab.active {
@@ -89,6 +90,30 @@ body {
 .nav-tab:hover {
     background: #34495e;
     color: white;
+}
+
+/* Badge de notification */
+.notification-badge {
+    position: absolute;
+    top: 5px;
+    right: 8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.notification-badge.hidden {
+    display: none !important;
 }
 
 .tab-content {

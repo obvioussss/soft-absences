@@ -253,12 +253,14 @@ def get_static_content(file_path):
             
             <!-- Procédure -->
             <div id="procedure" class="tab-content">
-                <h2>Mes Demandes d'Absence</h2>
-                
-                <!-- Boutons d'action -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button class="btn" onclick="showNewRequestForm()">➕ Nouvelle demande de congé</button>
-                    <button class="btn btn-warning" onclick="showSicknessDeclarationForm()">🏥 Déclaration de maladie</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+                    <h2 style="margin: 0;">Mes Demandes d'Absence</h2>
+                    
+                    <!-- Boutons d'action alignés à droite -->
+                    <div class="flex-mobile-column" style="gap: 10px;">
+                        <button class="btn" onclick="showNewRequestForm()">🏖️ Nouvelle demande de congé</button>
+                        <button class="btn btn-warning" onclick="showSicknessDeclarationForm()">🏥 Nouvelle déclaration maladie</button>
+                    </div>
                 </div>
                 
                 <!-- Formulaire de nouvelle demande intégré -->
@@ -320,7 +322,7 @@ def get_static_content(file_path):
                 
                 <!-- Sous-onglets pour les demandes utilisateur -->
                 <div class="sub-tabs" style="margin-top: 10px;">
-                    <button class="sub-tab active" onclick="showSubTab('user-vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab active" onclick="showSubTab('user-vacation-requests')">🏖️ Demandes de Congé</button>
                     <button class="sub-tab" onclick="showSubTab('user-sickness-declarations')">🏥 Déclarations de Maladie</button>
                 </div>
                 <div id="user-vacation-requests" class="sub-tab-content active">
@@ -434,7 +436,7 @@ def get_static_content(file_path):
                 
                 <!-- Sous-onglets pour les demandes -->
                 <div class="sub-tabs">
-                    <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Congé</button>
                     <button class="sub-tab" onclick="showSubTab('sickness-declarations')">🏥 Déclarations de Maladie</button>
                     <button class="sub-tab" onclick="showSubTab('admin-documents')">📄 Documents</button>
                 </div>
@@ -2022,7 +2024,7 @@ async function loadAllRequests() {
             return;
         }
         
-        let html = '<h3>🏖️ Demandes de Vacances</h3>';
+        let html = '<h3>🏖️ Demandes de Congé</h3>';
         
         // Statistiques rapides (sécurisées)
         const arr = Array.isArray(requests) ? requests : [];

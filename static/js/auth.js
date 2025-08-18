@@ -48,6 +48,11 @@ async function login(email, password) {
 }
 
 function logout() {
+    // Arrêter la mise à jour périodique du badge
+    if (typeof stopBadgeUpdateInterval === 'function') {
+        stopBadgeUpdateInterval();
+    }
+    
     authToken = null;
     currentUser = null;
     // Nettoyer le localStorage au cas où
@@ -91,6 +96,15 @@ function showMainContent() {
     
     // Forcer l'actualisation de l'interface selon le rôle
     updateUIBasedOnRole();
+    
+    // Mettre à jour le badge de notification pour les admins
+    if (currentUser.role === 'admin' && typeof updatePendingRequestsBadge === 'function') {
+        updatePendingRequestsBadge();
+        // Démarrer la mise à jour périodique du badge
+        if (typeof startBadgeUpdateInterval === 'function') {
+            startBadgeUpdateInterval();
+        }
+    }
     
     // Charger le tableau de bord
     loadDashboard();

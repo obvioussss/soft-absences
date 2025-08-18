@@ -30,6 +30,29 @@ async def read_all_absence_requests(
     requests = crud.get_absence_requests(db, skip=skip, limit=limit)
     return requests
 
+@router.get("/pending-count")
+async def get_pending_requests_count(
+    current_user: models.User = Depends(auth.get_current_admin_user),
+    db: Session = Depends(get_db)
+):
+    """Récupère le nombre de demandes d'absence en attente et de déclarations de maladie non vues pour les administrateurs"""
+    # Compter les demandes d'absence en attente
+    absence_count = db.query(models.AbsenceRequest).filter(
+        models.AbsenceRequest.status == models.AbsenceStatus.EN_ATTENTE
+    ).count()
+    
+    # Compter les déclarations de maladie non vues par l'admin
+    sickness_count = db.query(models.SicknessDeclaration).filter(
+        models.SicknessDeclaration.viewed_by_admin == False
+    ).count()
+    
+    total_count = absence_count + sickness_count
+    return {
+        "pending_count": total_count,
+        "absence_requests": absence_count,
+        "sickness_declarations": sickness_count
+    }
+
 @router.post("/", response_model=schemas.AbsenceRequest)
 async def create_absence_request(
     request: schemas.AbsenceRequestCreate,

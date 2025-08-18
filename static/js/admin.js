@@ -1,4 +1,53 @@
 // Fonctions administrateur
+
+// Fonction pour mettre à jour le badge de notification des demandes en attente
+async function updatePendingRequestsBadge() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        return;
+    }
+    
+    try {
+        const response = await apiCall('/absence-requests/pending-count');
+        const count = response.pending_count || 0;
+        const badge = document.getElementById('pending-requests-badge');
+        
+        if (badge) {
+            badge.textContent = count;
+            if (count > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour du badge de notification:', error);
+    }
+}
+
+// Mettre à jour le badge périodiquement pour les admins
+let badgeUpdateInterval;
+
+function startBadgeUpdateInterval() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        return;
+    }
+    
+    // Éviter les intervalles multiples
+    if (badgeUpdateInterval) {
+        clearInterval(badgeUpdateInterval);
+    }
+    
+    // Mettre à jour le badge toutes les 30 secondes
+    badgeUpdateInterval = setInterval(updatePendingRequestsBadge, 30000);
+}
+
+function stopBadgeUpdateInterval() {
+    if (badgeUpdateInterval) {
+        clearInterval(badgeUpdateInterval);
+        badgeUpdateInterval = null;
+    }
+}
+
 async function loadUsers() {
     const usersList = document.getElementById('users-list');
     
@@ -104,7 +153,7 @@ async function loadAllRequests() {
             return;
         }
         
-        let html = '<h3>🏖️ Demandes de Vacances</h3>';
+        let html = '<h3>🏖️ Demandes de Congé</h3>';
         
         // Statistiques rapides (sécurisées)
         const arr = Array.isArray(requests) ? requests : [];
@@ -662,6 +711,7 @@ async function approveRequest(requestId) {
         
         showAlert('Demande approuvée !');
         loadAllRequests();
+        updatePendingRequestsBadge(); // Mettre à jour le badge
         if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
         
     } catch (error) {
@@ -683,6 +733,7 @@ async function rejectRequest(requestId) {
         
         showAlert('Demande refusée.');
         loadAllRequests();
+        updatePendingRequestsBadge(); // Mettre à jour le badge
         if (calendar && currentUser.role === 'admin') await calendar.showCalendar();
         
     } catch (error) {

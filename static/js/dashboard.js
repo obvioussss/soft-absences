@@ -43,6 +43,7 @@ async function loadDashboard() {
 			const usedDays = Number(dashboardData.used_leave_days) || 0;
 			const totalDays = Number(dashboardData.total_leave_days) || 0;
 			const remainingDays = Number(dashboardData.remaining_leave_days ?? (totalDays - usedDays)) || 0;
+			const sickDays = Number(dashboardData.sick_days) || 0;
 			
 			let html = '<h3>🌴 Compteur de Congés Payés</h3>';
             
@@ -70,6 +71,20 @@ async function loadDashboard() {
                     </div>
                     <div style="text-align: center; margin-top: 10px; font-size: 14px; color: #666;">
                         ${percentageUsed.toFixed(1)}% des congés utilisés
+                    </div>
+                </div>
+            `;
+            
+            // Section jours de maladie
+            html += '<h3>🤒 Jours de Maladie</h3>';
+            html += `
+                <div style="background: #fff3cd; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 5px solid #ffc107;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 28px; font-weight: bold; color: #856404;">${sickDays}</div>
+                        <div style="color: #856404; font-size: 16px; margin-top: 5px;">Jours de maladie cette année</div>
+                        <div style="color: #6c757d; font-size: 12px; margin-top: 5px;">
+                            Inclut les demandes d'absence maladie et les déclarations avec certificat médical
+                        </div>
                     </div>
                 </div>
             `;

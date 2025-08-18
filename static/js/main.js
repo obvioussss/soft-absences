@@ -71,6 +71,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 hideNewRequestForm();
                 loadUserRequests(); // Recharger la liste des demandes
                 
+                // Notifier les admins connectés qu'une nouvelle demande a été créée
+                // (Dans une vraie application, cela pourrait être fait via WebSocket)
+                if (typeof updatePendingRequestsBadge === 'function') {
+                    setTimeout(updatePendingRequestsBadge, 1000); // Petit délai pour laisser le temps au serveur de traiter
+                }
+                
             } catch (error) {
                 showAlert('Erreur lors de la soumission: ' + error.message, 'error');
             }

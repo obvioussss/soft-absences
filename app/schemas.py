@@ -124,6 +124,7 @@ class DashboardData(BaseModel):
     total_leave_days: int
     pending_requests: int
     approved_requests: int
+    sick_days: int
 
 # Schéma pour le résumé des absences d'un utilisateur
 class UserAbsenceSummary(BaseModel):

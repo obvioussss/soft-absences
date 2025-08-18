@@ -43,7 +43,10 @@
                 <button class="nav-tab" onclick="showTab('calendar')">Calendrier</button>
                 <button class="nav-tab user-only" onclick="showTab('procedure')">Mes Demandes</button>
                 <button class="nav-tab admin-only" onclick="showTab('admin-users')" style="display: none;">Utilisateurs</button>
-                <button class="nav-tab admin-only" onclick="showTab('admin-requests')" style="display: none;">📋 Demandes</button>
+                <button class="nav-tab admin-only" onclick="showTab('admin-requests')" style="display: none;">
+                    📋 Demandes
+                    <span id="pending-requests-badge" class="notification-badge hidden">0</span>
+                </button>
                 
                 <button class="nav-tab" onclick="logout()">Déconnexion</button>
             </div>
@@ -243,12 +246,14 @@
             
             <!-- Procédure -->
             <div id="procedure" class="tab-content">
-                <h2>Mes Demandes d'Absence</h2>
-                
-                <!-- Boutons d'action -->
-                <div class="flex-mobile-column" style="margin-bottom: 20px;">
-                    <button class="btn" onclick="showNewRequestForm()">➕ Nouvelle demande de congé</button>
-                    <button class="btn btn-warning" onclick="showSicknessDeclarationForm()">🏥 Déclaration de maladie</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+                    <h2 style="margin: 0;">Mes Demandes d'Absence</h2>
+                    
+                    <!-- Boutons d'action alignés à droite -->
+                    <div class="flex-mobile-column" style="gap: 10px;">
+                        <button class="btn" onclick="showNewRequestForm()">🏖️ Nouvelle demande de congé</button>
+                        <button class="btn btn-warning" onclick="showSicknessDeclarationForm()">🏥 Nouvelle déclaration maladie</button>
+                    </div>
                 </div>
                 
                 <!-- Formulaire de nouvelle demande intégré -->
@@ -314,7 +319,7 @@
                 
                 <!-- Sous-onglets pour les demandes utilisateur -->
                 <div class="sub-tabs" style="margin-top: 10px;">
-                    <button class="sub-tab active" onclick="showSubTab('user-vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab active" onclick="showSubTab('user-vacation-requests')">🏖️ Demandes de Congé</button>
                     <button class="sub-tab" onclick="showSubTab('user-sickness-declarations')">🏥 Déclarations de Maladie</button>
                 </div>
                 <div id="user-vacation-requests" class="sub-tab-content active">
@@ -430,7 +435,7 @@
                 
                 <!-- Sous-onglets pour les demandes -->
                 <div class="sub-tabs">
-                    <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Vacances</button>
+                    <button class="sub-tab active" onclick="showSubTab('vacation-requests')">🏖️ Demandes de Congé</button>
                     <button class="sub-tab" onclick="showSubTab('sickness-declarations')">🏥 Déclarations de Maladie</button>
                     <button class="sub-tab" onclick="showSubTab('admin-documents')">📄 Documents</button>
                 </div>
