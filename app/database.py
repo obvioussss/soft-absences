@@ -17,7 +17,7 @@ elif ENVIRONMENT == "production":
         os.getenv("POSTGRES_URL") or 
         os.getenv("POSTGRES_PRISMA_URL") or
         os.getenv("NEON_DATABASE_URL") or
-        "sqlite:///./absences.db"  # Fallback vers fichier plutôt que mémoire
+        "sqlite:////tmp/absences.db"  # Fallback vers /tmp (écriture autorisée sur Vercel)
     )
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./absences.db")

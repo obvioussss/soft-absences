@@ -14,8 +14,29 @@ from app.routes import auth, users, absence_requests, dashboard, calendar, sickn
 # Charger les variables d'environnement
 load_dotenv()
 
-# Créer les tables
+# Créer les tables et garantir un admin par défaut en production
 Base.metadata.create_all(bind=engine)
+try:
+    if os.getenv("ENVIRONMENT", "development") == "production":
+        db = next(get_db())
+        # Vérifier/Créer l'admin par défaut
+        admin = db.query(models.User).filter(models.User.email == "hello.obvious@gmail.com").first()
+        if not admin:
+            admin = models.User(
+                email="hello.obvious@gmail.com",
+                hashed_password=app_auth.get_password_hash("admin123"),
+                first_name="Admin",
+                last_name="System",
+                role=models.UserRole.ADMIN,
+                is_active=True,
+                annual_leave_days=25,
+            )
+            db.add(admin)
+            db.commit()
+        db.close()
+except Exception:
+    # Ne pas empêcher le démarrage si l'init échoue (ex: migration en cours)
+    pass
 
 app = FastAPI(title="Gestion des Absences", version="1.0.0")
 
